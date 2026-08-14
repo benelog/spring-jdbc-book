@@ -49,6 +49,20 @@ include::{examples}/ch04-transaction-aop/src/main/java/flashcard/aop/DeckService
 include::{examples}/ch04-transaction-aop/src/main/java/flashcard/aop/DeckService.java[tag=read-only]
 ----
 
+3장에서 본 트랜잭션 옵션들도 애너테이션의 속성으로 그대로 옮겨 온다.
+`readOnly` 외에 `timeout`, 전파 방식을 지정하는 ``propagation``, 격리 수준을 지정하는 ``isolation``이 있다.
+
+[source,java]
+----
+@Transactional(propagation = Propagation.REQUIRES_NEW, isolation = Isolation.READ_COMMITTED)
+public void recordImportAttempt(long deckId) {
+    // 가져오기가 실패해 롤백되어도 남아야 하는 시도 이력
+}
+----
+
+의미와 주의점은 3장의 설명 그대로다.
+특히 격리 수준은 트랜잭션을 새로 시작할 때만 적용되므로, 기본 전파 방식인 ``REQUIRED``로 바깥 트랜잭션에 참여하는 메서드에 ``isolation``만 지정하면 반영되지 않는다는 점을 기억하자.
+
 === 동작 원리: 프록시
 
 애너테이션만 붙였는데 트랜잭션이 어떻게 시작될까?
