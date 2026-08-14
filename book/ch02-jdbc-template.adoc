@@ -11,6 +11,15 @@ Spring JDBC의 핵심은 *템플릿 콜백 패턴*이다.
 이 장의 예제 모듈은 ``examples/ch02-jdbc-template``이다.
 아직 Spring 컨테이너 없이, `spring-jdbc` 라이브러리만 가져다 일반 Java 코드에서 사용한다.
 Spring JDBC는 프레임워크 전체를 도입하지 않아도 이렇게 라이브러리처럼 쓸 수 있다.
+1장의 빌드 파일과 비교하면 달라진 것은 `spring-jdbc` 한 줄뿐이다.
+
+[source,groovy,indent=0]
+----
+include::{examples}/ch02-jdbc-template/build.gradle[tag=deps]
+----
+
+``spring-jdbc``는 `spring-core`, `spring-beans`, ``spring-tx``를 함께 데려오지만 컨테이너(`spring-context`)는 요구하지 않는다.
+"라이브러리처럼 쓸 수 있다"는 말의 근거가 바로 이 의존성 목록이다.
 
 === 왜 Spring JDBC인가
 

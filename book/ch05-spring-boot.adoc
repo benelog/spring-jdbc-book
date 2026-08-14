@@ -12,15 +12,21 @@ Spring Boot는 "클래스패스에 있는 것을 보고 뻔한 조립을 대신 
 
 [source,groovy,indent=0]
 ----
-include::{examples}/ch05-boot-jdbc/build.gradle[]
+include::{examples}/ch05-boot-jdbc/build.gradle[tag=deps]
 ----
 
-의존성 네 갈래가 각각 무엇을 가져오는지 보자.
+앞 장들에서 라이브러리를 하나씩 직접 고르던 dependencies 블록이 *스타터* 선언으로 바뀌었다.
+구현 의존성 네 갈래가 각각 무엇을 가져오는지 보자.
 
 * `spring-boot-starter-webmvc`: Spring MVC와 내장 톰캣. Spring Boot 4부터는 `starter-web` 대신 이 이름이 표준이다.
 * `spring-boot-starter-jdbc`: ``spring-jdbc``와 HikariCP. 클래스패스에 이 둘과 DB 드라이버가 있으면 Boot가 `DataSource`(HikariCP 풀), `JdbcTemplate`, `NamedParameterJdbcTemplate`, `JdbcClient`, ``JdbcTransactionManager``를 전부 빈으로 등록해 준다. ``@EnableTransactionManagement``도 자동이다.
 * `spring-boot-starter-thymeleaf`: 템플릿 엔진. ``src/main/resources/templates/*.html``을 뷰로 렌더링한다.
 * `spring-boot-h2console`: H2가 제공하는 웹 콘솔의 자동 설정. Spring Boot 4에서 별도 모듈로 분리되었다.
+
+테스트 의존성도 스타터로 정리된다.
+``spring-boot-starter-test``가 JUnit, AssertJ, Mockito 등 공통 도구를, ``-jdbc-test``와 ``-webmvc-test``가 각각 ``@JdbcTest``와 ``@WebMvcTest``/``MockMvc`` 같은 슬라이스 테스트 지원을 가져온다.
+앞 장들에서 JUnit과 AssertJ를 하나씩 선언하던 것도 스타터 하나로 흡수된 셈이다.
+이 장의 후반에서 쓸 Testcontainers 의존성은 해당 절에서 따로 소개한다.
 
 애플리케이션 클래스는 이것이 전부다.
 

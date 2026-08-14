@@ -1,3 +1,4 @@
+// tag::deps[]
 plugins {
     id 'org.springframework.boot'
     id 'io.spring.dependency-management'
@@ -13,13 +14,16 @@ dependencies {
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.springframework.boot:spring-boot-starter-jdbc-test'
     testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
+// end::deps[]
     // tag::testcontainers[]
     testImplementation 'org.springframework.boot:spring-boot-testcontainers'
     testImplementation 'org.testcontainers:testcontainers-junit-jupiter'
     testImplementation 'org.testcontainers:testcontainers-postgresql'
     testRuntimeOnly 'org.postgresql:postgresql'
     // end::testcontainers[]
+// tag::deps[]
 }
+// end::deps[]
 
 tasks.register('h2', JavaExec) {
     classpath = sourceSets.main.runtimeClasspath

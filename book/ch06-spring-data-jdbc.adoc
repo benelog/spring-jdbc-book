@@ -5,7 +5,16 @@
 Spring Data JDBC는 이 뻔한 부분을 인터페이스 선언만으로 만들어 주면서도, JPA 같은 무거운 기계 장치(영속성 컨텍스트, 지연 로딩, 변경 감지)는 들이지 않는다.
 "ORM의 편의 중 단순한 것만, Spring JDBC의 투명함은 그대로"가 이 기술의 설계 철학이다.
 
-예제 모듈은 `examples/ch06-data-jdbc`, 의존성은 `spring-boot-starter-data-jdbc` 하나다.
+예제 모듈은 ``examples/ch06-data-jdbc``다.
+
+[source,groovy,indent=0]
+----
+include::{examples}/ch06-data-jdbc/build.gradle[tag=deps]
+----
+
+구현 의존성은 `spring-boot-starter-data-jdbc` 하나다.
+이 스타터가 Spring Data JDBC와 함께 5장의 ``spring-boot-starter-jdbc``(Spring JDBC, HikariCP)까지 전부 데려온다.
+테스트 쪽에는 ``@DataJdbcTest`` 슬라이스를 제공하는 ``spring-boot-starter-data-jdbc-test``가 더해졌다.
 
 === 애그리거트: 함께 저장되고 함께 지워지는 단위
 

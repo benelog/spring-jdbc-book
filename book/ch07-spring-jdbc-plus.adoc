@@ -15,11 +15,11 @@ Spring JDBC Plus는 네이버가 만들어 공개한 Spring Data JDBC 확장 라
 
 === 설정
 
-의존성은 스타터 둘이다.
+완성판 웹 앱답게 의존성은 5장(웹 계층)과 6장(Spring Data JDBC) 구성의 합집합이고, 거기에 Plus 스타터 둘이 더해진다.
 
 [source,groovy,indent=0]
 ----
-include::{examples}/ch07-jdbc-plus/build.gradle[tag=plus]
+include::{examples}/ch07-jdbc-plus/build.gradle[tag=deps]
 ----
 
 `-sql` 스타터가 커스텀 SQL 지원(`JdbcRepositorySupport` 등)을, `-repository` 스타터가 `JdbcRepository` 인터페이스와 그 자동 설정을 가져온다.

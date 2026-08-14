@@ -5,7 +5,12 @@
 삭제를 되돌릴 수 있게 하는 soft delete, 애그리거트를 쿼리 한 번으로 읽는 조회, 대량 저장, 그리고 파라미터 처리의 소소하지만 실무적인 개선들이다.
 
 예제 모듈은 ``examples/ch10-jdbc-plus-deep``로, 화면 없이 리포지토리와 테스트에 집중한다.
-설정(표준 리포지토리를 끄고 Plus를 켜는 프로퍼티)은 7장과 같다.
+설정(표준 리포지토리를 끄고 Plus를 켜는 프로퍼티)은 7장과 같고, 의존성은 7장에서 웹 관련 스타터를 덜어 낸 최소 구성이다.
+
+[source,groovy,indent=0]
+----
+include::{examples}/ch10-jdbc-plus-deep/build.gradle[tag=deps]
+----
 
 [source,sql,indent=0]
 ----

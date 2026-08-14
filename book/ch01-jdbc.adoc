@@ -12,6 +12,21 @@ JDBC는 구현체가 아니라 *인터페이스의 묶음*이다.
 
 이 장의 예제 모듈은 ``examples/ch01-jdbc-basics``다.
 Spring 없이 JDK와 H2 드라이버, 커넥션 풀 라이브러리(HikariCP)만 쓴다.
+빌드 파일의 의존성 선언이 그 사실을 그대로 보여 준다.
+
+[source,groovy,indent=0]
+----
+include::{examples}/ch01-jdbc-basics/build.gradle[tag=deps]
+----
+
+* `spring-boot-dependencies` platform: 코드가 아니라 *버전표*(BOM)다. 아래 의존성들에 버전이 없는 것은 검증된 조합의 선택을 여기에 맡겼기 때문이고, 이 책의 모든 모듈이 같은 방법으로 버전을 통일한다.
+* `h2`: H2 데이터베이스 엔진과 JDBC 드라이버.
+* `HikariCP`: 커넥션 풀. 이 장의 뒷부분에서 등장한다.
+* `slf4j-simple`(runtimeOnly): HikariCP가 남기는 로그를 콘솔에 보여 주는 최소한의 로깅 구현.
+* 테스트 3종: JUnit과 AssertJ, 그리고 테스트 실행기.
+
+Spring 라이브러리는 아직 하나도 클래스패스에 없다.
+장마다 이 목록이 어떻게 한두 줄씩 늘어나는지가 곧 이 책의 진행 순서다.
 
 === 스키마: 덱과 카드
 

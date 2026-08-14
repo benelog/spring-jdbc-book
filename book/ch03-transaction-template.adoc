@@ -5,6 +5,15 @@
 이 장에서는 Spring의 트랜잭션 추상화가 이 둘을 어떻게 해결하는지 본다.
 
 예제 모듈은 ``examples/ch03-transaction-template``이다.
+빌드 파일은 2장과 완전히 같다.
+트랜잭션 추상화를 쓴다고 새로 추가할 의존성은 없다.
+
+[source,groovy,indent=0]
+----
+include::{examples}/ch03-transaction-template/build.gradle[tag=deps]
+----
+
+이 장의 주인공인 ``PlatformTransactionManager``와 ``TransactionTemplate``이 ``spring-jdbc``가 함께 데려오는 `spring-tx` 모듈에 이미 들어 있기 때문이다.
 
 === PlatformTransactionManager: 트랜잭션의 추상화
 

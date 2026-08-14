@@ -3,6 +3,7 @@ plugins {
     id 'io.spring.dependency-management'
 }
 
+// tag::deps[]
 dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-webmvc'
     implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
@@ -16,6 +17,7 @@ dependencies {
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
 }
+// end::deps[]
 
 tasks.register('h2', JavaExec) {
     classpath = sourceSets.main.runtimeClasspath

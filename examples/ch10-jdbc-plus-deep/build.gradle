@@ -3,6 +3,7 @@ plugins {
     id 'io.spring.dependency-management'
 }
 
+// tag::deps[]
 dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-data-jdbc'
     implementation 'com.navercorp.spring:spring-boot-starter-data-jdbc-plus-sql:4.0.1'
@@ -10,3 +11,4 @@ dependencies {
     runtimeOnly 'com.h2database:h2'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
 }
+// end::deps[]

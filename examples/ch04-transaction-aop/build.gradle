@@ -2,6 +2,7 @@ plugins {
     id 'application'
 }
 
+// tag::deps[]
 dependencies {
     implementation platform('org.springframework.boot:spring-boot-dependencies:4.1.0')
     implementation 'org.springframework:spring-context'
@@ -14,6 +15,7 @@ dependencies {
     testImplementation 'org.assertj:assertj-core'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
+// end::deps[]
 
 application {
     mainClass = 'flashcard.aop.AopQuickTour'

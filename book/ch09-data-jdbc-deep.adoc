@@ -8,6 +8,12 @@
 
 이 장은 그 질문들에 답하는 Spring Data JDBC의 나머지 도구들을 다룬다.
 예제 모듈은 ``examples/ch09-data-jdbc-deep``이고, 6장처럼 덱과 카드 두 애그리거트로 이루어진 테스트 중심 모듈이다.
+의존성도 6장과 똑같다. 이 장의 심화 기능들에 새 의존성은 필요 없다.
+
+[source,groovy,indent=0]
+----
+include::{examples}/ch09-data-jdbc-deep/build.gradle[tag=deps]
+----
 
 [source,sql,indent=0]
 ----
