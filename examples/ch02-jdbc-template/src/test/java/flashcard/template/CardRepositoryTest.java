@@ -50,6 +50,17 @@ class CardRepositoryTest {
     }
 
     @Test
+    @DisplayName("SimpleJdbcInsert로 SQL 없이 저장한다")
+    void insertWithSimpleJdbcInsert() {
+        long id = cardRepository.insertWithSimpleJdbcInsert(Card.of(deckId, "deliberate", "의도적인"));
+
+        Card found = cardRepository.findById(id).orElseThrow();
+
+        assertThat(found.text()).isEqualTo("deliberate");
+        assertThat(found.deckId()).isEqualTo(deckId);
+    }
+
+    @Test
     @DisplayName("없는 카드는 빈 Optional을 돌려준다")
     void findMissing() {
         assertThat(cardRepository.findById(999L)).isEmpty();

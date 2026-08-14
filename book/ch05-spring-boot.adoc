@@ -1,12 +1,12 @@
 == Spring Boot: spring-boot-starter-jdbc와 첫 웹 앱
 
-앞 장까지 우리는 `DataSource`를 만들고, 템플릿을 만들고, 트랜잭션 매니저를 등록하는 조립 코드를 직접 썼다.
+앞 장까지 우리는 ``DataSource``를 만들고, 템플릿을 만들고, 트랜잭션 매니저를 등록하는 조립 코드를 직접 썼다.
 이 조립은 어느 프로젝트에서나 거의 같다.
 Spring Boot는 "클래스패스에 있는 것을 보고 뻔한 조립을 대신 해 주는" 자동 설정(auto-configuration)으로 이 반복을 없앤다.
 
-이 장에서는 `spring-boot-starter-jdbc`로 데이터 액세스 기반을 받고, 그 위에 Flashcard의 첫 웹 버전을 만든다.
+이 장에서는 ``spring-boot-starter-jdbc``로 데이터 액세스 기반을 받고, 그 위에 Flashcard의 첫 웹 버전을 만든다.
 덱과 카드를 관리하고 카드를 넘겨 보는, 아직 복습 일정은 없는 기본판이다.
-예제 모듈은 `examples/ch05-boot-jdbc`다.
+예제 모듈은 ``examples/ch05-boot-jdbc``다.
 
 === 의존성과 자동 설정
 
@@ -18,8 +18,8 @@ include::{examples}/ch05-boot-jdbc/build.gradle[]
 의존성 네 갈래가 각각 무엇을 가져오는지 보자.
 
 * `spring-boot-starter-webmvc`: Spring MVC와 내장 톰캣. Spring Boot 4부터는 `starter-web` 대신 이 이름이 표준이다.
-* `spring-boot-starter-jdbc`: `spring-jdbc`와 HikariCP. 클래스패스에 이 둘과 DB 드라이버가 있으면 Boot가 `DataSource`(HikariCP 풀), `JdbcTemplate`, `NamedParameterJdbcTemplate`, `JdbcTransactionManager`를 전부 빈으로 등록해 준다. `@EnableTransactionManagement`도 자동이다.
-* `spring-boot-starter-thymeleaf`: 템플릿 엔진. `src/main/resources/templates/*.html`을 뷰로 렌더링한다.
+* `spring-boot-starter-jdbc`: ``spring-jdbc``와 HikariCP. 클래스패스에 이 둘과 DB 드라이버가 있으면 Boot가 `DataSource`(HikariCP 풀), `JdbcTemplate`, `NamedParameterJdbcTemplate`, ``JdbcTransactionManager``를 전부 빈으로 등록해 준다. ``@EnableTransactionManagement``도 자동이다.
+* `spring-boot-starter-thymeleaf`: 템플릿 엔진. ``src/main/resources/templates/*.html``을 뷰로 렌더링한다.
 * `spring-boot-h2console`: H2가 제공하는 웹 콘솔의 자동 설정. Spring Boot 4에서 별도 모듈로 분리되었다.
 
 애플리케이션 클래스는 이것이 전부다.
@@ -38,7 +38,7 @@ include::{examples}/ch05-boot-jdbc/src/main/java/flashcard/boot/FlashcardApplica
 include::{examples}/ch05-boot-jdbc/src/main/resources/application.properties[tag=datasource]
 ----
 
-`spring.sql.init.mode=always`는 애플리케이션이 뜰 때 클래스패스의 `schema.sql`을 실행하라는 뜻이다.
+``spring.sql.init.mode=always``는 애플리케이션이 뜰 때 클래스패스의 ``schema.sql``을 실행하라는 뜻이다.
 스키마의 `create table if not exists` 덕분에 여러 번 떠도 안전하다.
 
 개발 중에는 실행되는 SQL이 보이면 편하다.
@@ -58,9 +58,9 @@ H2 콘솔은 브라우저에서 SQL을 실행해 보는 관리 화면이다.
 include::{examples}/ch05-boot-jdbc/src/main/resources/application.properties[tag=h2-console]
 ----
 
-앱을 띄우고(`./gradlew :ch05-boot-jdbc:bootRun`) `http://localhost:8080/h2-console`에 접속한 뒤, JDBC URL에 애플리케이션과 같은 `jdbc:h2:./db/flashcard;AUTO_SERVER=TRUE`를 넣으면 접속된다.
-파일 DB에 두 프로세스가 동시에 붙는 것이 가능한 이유가 바로 URL의 `AUTO_SERVER=TRUE`다.
-앱을 띄워 둔 채 콘솔에서 `select * from cards`를 실행하며 개발하는 흐름을 꼭 경험해 보자.
+앱을 띄우고(`./gradlew :ch05-boot-jdbc:bootRun`) ``http://localhost:8080/h2-console``에 접속한 뒤, JDBC URL에 애플리케이션과 같은 ``jdbc:h2:./db/flashcard;AUTO_SERVER=TRUE``를 넣으면 접속된다.
+파일 DB에 두 프로세스가 동시에 붙는 것이 가능한 이유가 바로 URL의 ``AUTO_SERVER=TRUE``다.
+앱을 띄워 둔 채 콘솔에서 ``select * from cards``를 실행하며 개발하는 흐름을 꼭 경험해 보자.
 
 콘솔 없이 터미널이 편하다면 빌드 파일에 정의해 둔 `./gradlew :ch05-boot-jdbc:h2` 태스크로 H2의 자체 콘솔을 띄울 수도 있다.
 
@@ -87,7 +87,7 @@ include::{examples}/ch05-boot-jdbc/src/main/java/flashcard/boot/DeckSummary.java
 include::{examples}/ch05-boot-jdbc/src/main/java/flashcard/boot/DeckRepository.java[tag=summary]
 ----
 
-`card_count`라는 별칭이 `cardCount` 프로퍼티에 매핑된다.
+``card_count``라는 별칭이 `cardCount` 프로퍼티에 매핑된다.
 "SQL 결과의 모양 = 화면 모델의 모양"으로 맞추는 이 방식은 이 책 전체에서 반복해서 쓰인다.
 
 === 컨트롤러와 템플릿
@@ -106,7 +106,7 @@ Thymeleaf 템플릿은 HTML 그대로다. `th:` 접두어 속성만 템플릿 �
 include::{examples}/ch05-boot-jdbc/src/main/resources/templates/home.html[tag=home]
 ----
 
-폼 전송을 받는 쪽은 `@PostMapping`이고, 처리 후에는 리다이렉트한다.
+폼 전송을 받는 쪽은 ``@PostMapping``이고, 처리 후에는 리다이렉트한다.
 새로고침으로 폼이 다시 제출되는 것을 막는 PRG(Post/Redirect/Get) 패턴이다.
 
 [source,java,indent=0]
@@ -124,18 +124,18 @@ include::{examples}/ch05-boot-jdbc/src/main/java/flashcard/boot/StudyController.
 
 === 테스트: @JdbcTest와 @SpringBootTest
 
-Boot의 테스트 지원 중 데이터 액세스에 유용한 것이 슬라이스 테스트 `@JdbcTest`다.
-전체 컨텍스트 대신 JDBC 관련 빈만 띄우고, `DataSource`를 내장 메모리 DB로 바꿔치기한다.
-저장소는 자동 등록 대상이 아니므로 `@Import`로 지정한다.
+Boot의 테스트 지원 중 데이터 액세스에 유용한 것이 슬라이스 테스트 ``@JdbcTest``다.
+전체 컨텍스트 대신 JDBC 관련 빈만 띄우고, ``DataSource``를 내장 메모리 DB로 바꿔치기한다.
+저장소는 자동 등록 대상이 아니므로 ``@Import``로 지정한다.
 
 [source,java,indent=0]
 ----
 include::{examples}/ch05-boot-jdbc/src/test/java/flashcard/boot/DeckRepositoryTest.java[tag=jdbc-test]
 ----
 
-`@JdbcTest`는 각 테스트를 트랜잭션으로 감싸고 끝나면 롤백하므로, 테스트끼리 데이터가 섞이지 않는다.
+``@JdbcTest``는 각 테스트를 트랜잭션으로 감싸고 끝나면 롤백하므로, 테스트끼리 데이터가 섞이지 않는다.
 
-웹 계층까지 포함한 흐름은 `@SpringBootTest`와 `MockMvc`로 확인한다.
+웹 계층까지 포함한 흐름은 ``@SpringBootTest``와 ``MockMvc``로 확인한다.
 운영 설정의 파일 DB 대신 메모리 DB를 쓰도록 프로퍼티만 덮어쓴다.
 
 [source,java,indent=0]

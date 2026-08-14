@@ -1,6 +1,7 @@
 package flashcard.template;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 import javax.sql.DataSource;
@@ -20,15 +21,17 @@ public class DeckRepository {
 
     public DeckRepository(DataSource dataSource) {
         this.jdbc = new JdbcTemplate(dataSource);
+        // tag::simple-insert-init[]
         this.deckInsert = new SimpleJdbcInsert(dataSource)
                 .withTableName("decks")
                 .usingGeneratedKeyColumns("id");
+        // end::simple-insert-init[]
     }
     // end::init[]
 
     // tag::insert[]
     public long insert(String name) {
-        Number id = deckInsert.executeAndReturnKey(java.util.Map.of("name", name));
+        Number id = deckInsert.executeAndReturnKey(Map.of("name", name));
         return id.longValue();
     }
     // end::insert[]

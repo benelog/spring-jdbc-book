@@ -23,7 +23,7 @@ include::{examples}/ch06-data-jdbc/src/main/java/flashcard/datajdbc/Deck.java[ta
 include::{examples}/ch06-data-jdbc/src/main/java/flashcard/datajdbc/Card.java[tag=class]
 ----
 
-`@MappedCollection`이 "덱 하나에 카드 여러 장"을 표현한다.
+``@MappedCollection``이 "덱 하나에 카드 여러 장"을 표현한다.
 `cards` 테이블의 `deck_id` 컬럼이 소속을, `card_index` 컬럼이 리스트 안의 순서를 담는다.
 카드 쪽에는 이 두 컬럼에 해당하는 필드가 아예 없다는 점이 인상적이다.
 소속과 순서는 애그리거트 구조가 이미 표현하고 있으므로 프레임워크가 대신 관리한다.
@@ -47,14 +47,14 @@ image::ch06-erd.png[6장 스키마 ERD,640]
 include::{examples}/ch06-data-jdbc/src/main/java/flashcard/datajdbc/DeckRepository.java[tag=class]
 ----
 
-`ListCrudRepository`를 상속하는 것만으로 `save`, `findById`, `findAll`, `deleteById` 등이 생긴다.
+``ListCrudRepository``를 상속하는 것만으로 `save`, `findById`, `findAll`, `deleteById` 등이 생긴다.
 여기에 세 가지 방식의 조회가 공존한다.
 
 1. *상속받은 CRUD*: 구현 없이 제공.
-2. *메서드 이름 파생 쿼리*: `findByNameContaining`처럼 이름 규칙으로 쿼리를 생성.
+2. *메서드 이름 파생 쿼리*: ``findByNameContaining``처럼 이름 규칙으로 쿼리를 생성.
 3. *`@Query`*: 복잡한 조회는 SQL을 직접. 2장에서 배운 이름 있는 파라미터가 그대로 쓰인다.
 
-`findAllSummaries`처럼 엔티티가 아닌 record(`DeckSummary`)를 돌려주는 조회 전용 쿼리도 `@Query`로 자연스럽게 처리된다.
+``findAllSummaries``처럼 엔티티가 아닌 record(`DeckSummary`)를 돌려주는 조회 전용 쿼리도 ``@Query``로 자연스럽게 처리된다.
 "기본은 자동, 복잡한 것은 SQL"이라는 균형이 Spring Data JDBC를 쓰는 감각이다.
 
 === 애그리거트 저장의 의미
@@ -102,7 +102,7 @@ include::{examples}/ch06-data-jdbc/src/test/java/flashcard/datajdbc/DeckReposito
 왜 대문자일까?
 Spring Data JDBC는 SQL을 생성할 때 식별자를 따옴표로 감싼다(quoting).
 따옴표로 감싼 식별자는 대소문자를 구별하는데, H2는 따옴표 없이 만든 테이블·컬럼 이름을 *대문자*로 저장한다.
-즉 `create table decks ...`로 만든 테이블의 실제 이름은 `DECKS`이고, 애너테이션에 `"decks"`라고 적으면 `"decks"`라는 소문자 이름을 찾다가 실패한다.
+즉 ``create table decks ...``로 만든 테이블의 실제 이름은 ``DECKS``이고, 애너테이션에 ``"decks"``라고 적으면 ``"decks"``라는 소문자 이름을 찾다가 실패한다.
 
 클래스·필드 이름에서 *유도되는* 이름(`Deck` → `DECK`, `cardCount` → `CARD_COUNT`)은 프레임워크가 DB 관례에 맞춰 대문자로 만들어 주므로 문제가 없다.
 문제는 애너테이션에 *직접 적은* 이름뿐이다. 그래서 직접 적을 때는 H2가 저장하는 형태인 대문자로 맞췄다.
@@ -110,7 +110,7 @@ PostgreSQL은 반대로 소문자로 저장하므로, DB를 옮길 때 이 지�
 
 === 테스트: @DataJdbcTest
 
-5장의 `@JdbcTest`처럼, Spring Data JDBC에는 리포지토리만 띄우는 슬라이스 테스트가 있다.
+5장의 ``@JdbcTest``처럼, Spring Data JDBC에는 리포지토리만 띄우는 슬라이스 테스트가 있다.
 
 [source,java,indent=0]
 ----
@@ -128,6 +128,6 @@ include::{examples}/ch06-data-jdbc/src/test/java/flashcard/datajdbc/DeckReposito
 Spring Data JDBC는 2장에서 익힌 Spring JDBC 위에 얇게 얹히는 기술이라, 아래층의 지식이 그대로 통한다.
 
 다만 실무 규모의 앱을 만들다 보면 아쉬움이 생긴다.
-`@Query`에 적는 SQL이 늘어날수록 컬럼 목록 나열이 반복되고, `save` 하나로 insert와 update를 겸하는 설계는 "새 객체인지 아닌지"를 프레임워크가 판단하게 만든다.
+``@Query``에 적는 SQL이 늘어날수록 컬럼 목록 나열이 반복되고, `save` 하나로 insert와 update를 겸하는 설계는 "새 객체인지 아닌지"를 프레임워크가 판단하게 만든다.
 이 아쉬움을 노린 확장 라이브러리가 다음 장의 Spring JDBC Plus다.
 그리고 다음 장에서 드디어 Flashcard를 요구사항 전부와 함께 완성한다.

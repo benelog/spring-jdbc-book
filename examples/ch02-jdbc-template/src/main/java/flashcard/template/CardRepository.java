@@ -15,6 +15,7 @@ import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.core.namedparam.SqlParameterSource;
 import org.springframework.jdbc.core.namedparam.SqlParameterSourceUtils;
+import org.springframework.jdbc.core.simple.SimpleJdbcInsert;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
 
@@ -29,8 +30,13 @@ public class CardRepository {
 
     private final RowMapper<Card> cardMapper = DataClassRowMapper.newInstance(Card.class);
 
+    private final SimpleJdbcInsert cardInsert;
+
     public CardRepository(DataSource dataSource) {
         this.jdbc = new NamedParameterJdbcTemplate(dataSource);
+        this.cardInsert = new SimpleJdbcInsert(dataSource)
+                .withTableName("cards")
+                .usingGeneratedKeyColumns("id");
     }
     // end::init[]
 
@@ -47,6 +53,13 @@ public class CardRepository {
         return Objects.requireNonNull(keyHolder.getKey()).longValue();
     }
     // end::insert[]
+
+    // tag::simple-insert[]
+    public long insertWithSimpleJdbcInsert(Card card) {
+        Number id = cardInsert.executeAndReturnKey(new BeanPropertySqlParameterSource(card));
+        return id.longValue();
+    }
+    // end::simple-insert[]
 
     // tag::select-one[]
     public Optional<Card> findById(long id) {
