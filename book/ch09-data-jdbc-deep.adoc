@@ -1,0 +1,205 @@
+== Spring Data JDBC 더 깊이: 조회, 값 매핑, 생명주기
+
+6장에서는 Spring Data JDBC의 뼈대인 애그리거트와 리포지토리를 익혔다.
+그 뼈대만으로도 앱은 만들어지지만, 실무 규모가 되면 곧 다음 질문들이 따라온다.
+카드가 수천 장일 때 목록 화면은 어떻게 끊어 보여 주나?
+"생성일·수정일 컬럼을 모든 테이블에 두라"는 팀 규칙은 누가 채우나?
+태그 목록처럼 테이블로 만들기는 과한 값은 어디에 담나?
+
+이 장은 그 질문들에 답하는 Spring Data JDBC의 나머지 도구들을 다룬다.
+예제 모듈은 ``examples/ch09-data-jdbc-deep``이고, 6장처럼 덱과 카드 두 애그리거트로 이루어진 테스트 중심 모듈이다.
+
+[source,sql,indent=0]
+----
+include::{examples}/ch09-data-jdbc-deep/src/main/resources/schema.sql[tag=schema]
+----
+
+`policy_*`, `tags`, `created_at`, `updated_at` 컬럼이 이 장의 주인공들이다.
+
+=== @Embedded: 테이블 없는 값 객체
+
+덱마다 "하루에 새 카드 몇 장, 복습 몇 장까지"라는 복습 정책을 두고 싶다.
+정책은 항상 덱과 함께 읽고 쓰는 값이므로 테이블을 따로 만들 이유가 없다.
+이럴 때 ``@Embedded``를 쓰면 값 객체의 필드들이 소유자 테이블의 컬럼으로 펼쳐진다.
+
+[source,java,indent=0]
+----
+include::{examples}/ch09-data-jdbc-deep/src/main/java/flashcard/deep/ReviewPolicy.java[tag=class]
+----
+
+[source,java,indent=0]
+----
+include::{examples}/ch09-data-jdbc-deep/src/main/java/flashcard/deep/Deck.java[tag=class]
+----
+
+`prefix` 덕분에 `newCardsPerDay` 필드는 `POLICY_NEW_CARDS_PER_DAY` 컬럼과 짝이 된다.
+접두사는 애너테이션에 직접 적는 이름이므로, 6장의 식별자 인용 규칙에 따라 H2가 저장하는 형태인 대문자로 맞췄다.
+``.Nullable``은 "컬럼이 전부 null이면 값 객체 자체를 null로 두라"는 뜻이다.
+
+[source,java,indent=0]
+----
+include::{examples}/ch09-data-jdbc-deep/src/test/java/flashcard/deep/DeckRepositoryTest.java[tag=embedded]
+----
+
+DB 관점에서는 평범한 컬럼 몇 개지만, 도메인 관점에서는 ``ReviewPolicy``라는 이름 있는 개념이 된다.
+
+=== AggregateReference: 애그리거트 사이의 타입 있는 id 참조
+
+6장에서 "애그리거트끼리는 객체 참조 대신 id로 참조하라"고 했다.
+7장의 완성판에서는 그 원칙을 `Long deckId` 필드로 지켰는데, 이 방식은 컴파일러가 보기에 그냥 숫자다.
+`cardId` 자리에 ``deckId``를 넣어도 아무도 말려 주지 않는다.
+
+``AggregateReference``는 같은 id 참조에 타입을 입힌다.
+
+[source,java,indent=0]
+----
+include::{examples}/ch09-data-jdbc-deep/src/main/java/flashcard/deep/Card.java[tag=class]
+----
+
+DB에 저장되는 것은 여전히 `deck_id` 숫자 하나지만, 코드에서는 "덱을 가리키는 참조"라는 사실이 타입으로 드러난다.
+참조를 따라가는 것은 명시적인 조회다.
+
+[source,java,indent=0]
+----
+include::{examples}/ch09-data-jdbc-deep/src/test/java/flashcard/deep/CardRepositoryTest.java[tag=aggregate-reference]
+----
+
+JPA의 지연 로딩처럼 "언제 쿼리가 나가는지 모르는" 마법이 없다.
+참조를 풀려면 리포지토리를 직접 호출해야 하고, 그래서 쿼리가 나가는 지점이 코드에 그대로 보인다.
+
+=== 페이징, 정렬, Limit
+
+카드 브라우저 화면을 위해 리포지토리에 조회 도구를 더한다.
+
+[source,java,indent=0]
+----
+include::{examples}/ch09-data-jdbc-deep/src/main/java/flashcard/deep/CardRepository.java[tag=class]
+----
+
+``ListPagingAndSortingRepository``를 상속하면 `findAll(Sort)`, ``findAll(Pageable)``이 생기고, 파생 쿼리에도 `Pageable`, `Sort`, `Limit` 파라미터를 붙일 수 있다.
+
+[source,java,indent=0]
+----
+include::{examples}/ch09-data-jdbc-deep/src/test/java/flashcard/deep/CardRepositoryTest.java[tag=paging]
+----
+
+`Page` 반환 타입의 값은 전체 건수를 함께 세어 준다는 데 있다.
+"전체 12장 중 3페이지"라는 화면 문구가 `getTotalElements`, ``getTotalPages``에서 바로 나온다.
+전체 건수가 필요 없다면 반환 타입을 ``List``나 ``Slice``로 바꿔 카운트 쿼리를 아낄 수 있다.
+
+정렬 조건과 상한은 호출하는 쪽이 정한다.
+
+[source,java,indent=0]
+----
+include::{examples}/ch09-data-jdbc-deep/src/test/java/flashcard/deep/CardRepositoryTest.java[tag=sort-limit]
+----
+
+메서드 이름에 조건을 굳히는 `findTop2By...` 방식과 달리, ``Limit``는 개수를 호출 시점에 바꿀 수 있다.
+
+=== @Modifying: 여러 행을 고치는 쿼리
+
+"덱을 합치면서 카드를 전부 옮기기"처럼 여러 행을 한 번에 고치는 작업은, 카드를 한 장씩 불러 저장하는 것보다 UPDATE 한 방이 낫다.
+``@Query``에 DML을 적고 ``@Modifying``을 붙이면 된다.
+
+[source,java,indent=0]
+----
+include::{examples}/ch09-data-jdbc-deep/src/test/java/flashcard/deep/CardRepositoryTest.java[tag=modifying]
+----
+
+반환 타입을 ``int``로 하면 영향받은 행 수를 돌려준다.
+2장에서 ``JdbcTemplate.update``가 돌려주던 그 값이다.
+주의할 점도 2장과 같다. 이 UPDATE는 애그리거트를 거치지 않고 테이블에 직접 닿으므로, 낙관적 잠금(`@Version`)이나 이 장 뒷부분의 콜백·감사는 적용되지 않는다.
+
+=== 감사: 생성·수정 시각 자동 기록
+
+"모든 테이블에 `created_at`, `updated_at` 컬럼을 둔다"는 규칙은 흔하지만, 모든 저장 코드에서 손으로 채우면 반드시 빠뜨리는 곳이 생긴다.
+감사(auditing)를 켜면 프레임워크가 저장 시점에 대신 채운다.
+
+`Deck` 엔티티에서 봤듯 필드에는 ``@CreatedDate``와 ``@LastModifiedDate``를 붙이고, 설정에서 ``@EnableJdbcAuditing``으로 기능을 켠다(설정 클래스는 잠시 뒤에).
+
+[source,java,indent=0]
+----
+include::{examples}/ch09-data-jdbc-deep/src/test/java/flashcard/deep/DeckRepositoryTest.java[tag=auditing]
+----
+
+`Card` record처럼 불변 타입이어도 된다.
+Spring Data는 세터 대신 값을 바꾼 사본을 만들어 돌려주므로, ``save``가 반환한 객체를 쓰면 채워진 시각이 보인다.
+누가 만들었는지도 남기고 싶다면 ``@CreatedBy``와 `AuditorAware` 빈을 더하면 되는데, 로그인이 없는 Flashcard에는 해당이 없어 생략한다.
+
+=== 커스텀 컨버터: 값 타입과 컬럼 사이
+
+카드에 태그 몇 개를 붙이고 싶다.
+7장에서는 태그를 테이블 둘(tag, card_tag)로 정규화했지만, "카드 안에서만 보이는 꼬리표" 정도라면 쉼표로 이은 문자열 한 컬럼이면 충분할 때도 많다.
+문제는 Spring Data JDBC가 ``Tags``라는 우리 타입을 varchar 컬럼에 어떻게 넣고 꺼낼지 모른다는 것.
+그 변환 규칙을 컨버터로 가르친다.
+
+[source,java,indent=0]
+----
+include::{examples}/ch09-data-jdbc-deep/src/main/java/flashcard/deep/Tags.java[tag=class]
+----
+
+[source,java,indent=0]
+----
+include::{examples}/ch09-data-jdbc-deep/src/main/java/flashcard/deep/TagsConverters.java[tag=class]
+----
+
+``@WritingConverter``는 저장 방향, ``@ReadingConverter``는 조회 방향이다.
+등록만 하면 엔티티의 `Tags` 필드가 여느 필드처럼 저장되고 조립된다.
+
+[source,java,indent=0]
+----
+include::{examples}/ch09-data-jdbc-deep/src/test/java/flashcard/deep/CardRepositoryTest.java[tag=converter]
+----
+
+물론 트레이드오프가 있다.
+"이 태그가 붙은 카드"를 SQL로 검색하려면 `like` 검색이 되어 버리므로, 태그로 조회·집계할 일이 많다면 7장처럼 테이블로 정규화하는 편이 맞다.
+컨버터는 "덩어리로 넣고 덩어리로 꺼내는 값"을 위한 도구다.
+
+=== 엔티티 콜백: 저장 직전에 끼어들기
+
+사용자가 카드 앞뒤에 실수로 넣은 공백은 저장 전에 정리해 두고 싶다.
+서비스마다 `strip()` 호출을 흩뿌리는 대신, 저장 직전에 항상 실행되는 콜백으로 모은다.
+
+[source,java,indent=0]
+----
+include::{examples}/ch09-data-jdbc-deep/src/test/java/flashcard/deep/CardRepositoryTest.java[tag=callback]
+----
+
+`BeforeConvertCallback<Card>` 빈을 등록하면 카드가 SQL 파라미터로 변환되기 직전마다 호출된다.
+불변 record와 잘 맞는 구조다. 콜백은 받은 객체를 고치는 대신 다듬은 사본을 돌려준다.
+`AfterConvertCallback`(조회 직후), `BeforeDeleteCallback`(삭제 직전) 등 다른 시점도 같은 방식으로 끼어들 수 있다.
+
+=== 설정 클래스와 슬라이스 테스트의 함정
+
+지금까지의 커스터마이징 세 가지(감사, 컨버터, 콜백)는 설정 클래스 하나에 모인다.
+
+[source,java,indent=0]
+----
+include::{examples}/ch09-data-jdbc-deep/src/main/java/flashcard/deep/DataJdbcDeepConfig.java[tag=class]
+----
+
+``AbstractJdbcConfiguration``은 Spring Data JDBC의 기반 설정 클래스로, `userConverters` 같은 확장 지점을 열어 둔다.
+Spring Boot의 자동 설정도 내부적으로 이 클래스의 서브클래스라서, 우리가 서브클래스를 직접 두면 Boot 쪽이 자리를 비켜 준다.
+
+여기서 6장의 슬라이스 테스트 주의점이 하나 더 늘어난다.
+``@DataJdbcTest``는 일반 ``@Configuration`` 클래스를 컴포넌트 스캔에서 제외한다.
+그래서 테스트에서 이 설정을 쓰려면 명시적으로 가져와야 한다.
+
+[source,java,indent=0]
+----
+include::{examples}/ch09-data-jdbc-deep/src/test/java/flashcard/deep/DeckRepositoryTest.java[tag=setup]
+----
+
+``@Import``를 빠뜨리면 어떻게 될까?
+컨버터가 없으니 `Tags` 매핑이 실패하고, 감사가 꺼져 있으니 ``created_at``의 not null 제약에 걸린다.
+애플리케이션에서는 잘 돌던 코드가 테스트에서만 깨지는, 진단 비용이 큰 유형의 문제이므로 기억해 둘 만하다.
+
+=== 정리
+
+이 장의 도구들은 성격이 하나로 모인다. *반복되는 관심사를 선언 한 줄로 옮기는 것.*
+페이지 계산은 `Pageable` 파라미터로, 시각 기록은 애너테이션으로, 값 변환은 컨버터로, 공백 정리는 콜백으로.
+서비스 코드에는 도메인 로직만 남는다.
+
+그리고 이 장의 어떤 기능도 6장의 원칙을 깨지 않았다.
+쿼리가 나가는 지점은 여전히 코드에 보이고, 복잡한 조회는 여전히 SQL로 적는다.
+다음 장에서는 같은 태도로 Spring JDBC Plus의 남은 기능들을 마저 살펴보고 책을 맺는다.

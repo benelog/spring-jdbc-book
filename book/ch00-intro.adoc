@@ -76,7 +76,9 @@ examples/
 ├── ch05-boot-jdbc            # 5장: Spring Boot 웹 앱 (flashcard 기본판)
 ├── ch06-data-jdbc            # 6장: Spring Data JDBC
 ├── ch07-jdbc-plus            # 7장: Spring JDBC Plus (flashcard 완성판)
-└── ch08-kotlin               # 8장: Kotlin 팁
+├── ch08-kotlin               # 8장: Kotlin 팁
+├── ch09-data-jdbc-deep       # 9장: Spring Data JDBC 심화
+└── ch10-jdbc-plus-deep       # 10장: Spring JDBC Plus 심화
 ----
 
 JDK 25가 설치되어 있다면 각 장의 예제를 바로 실행할 수 있다.
@@ -100,3 +102,4 @@ cd examples
 
 1~4장은 데이터 액세스 개념에 집중하는 콘솔·테스트 예제이므로, 카드와 덱 두 테이블만 있는 간결한 스키마를 쓴다.
 5장에서 이 스키마 그대로 웹 앱을 만들고, 7장에서 복습 일정과 통계까지 담는 완성판 스키마로 확장한다.
+9~10장은 6~7장에서 다루지 못한 심화 기능을 살펴보는 테스트 중심 모듈이다.

@@ -30,3 +30,7 @@ include::ch06-spring-data-jdbc.adoc[]
 include::ch07-spring-jdbc-plus.adoc[]
 
 include::ch08-kotlin.adoc[]
+
+include::ch09-data-jdbc-deep.adoc[]
+
+include::ch10-jdbc-plus-deep.adoc[]

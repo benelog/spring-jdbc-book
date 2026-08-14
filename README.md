@@ -20,6 +20,8 @@ examples/   # 장별 예제 (Gradle 멀티 프로젝트, 전부 빌드/테스트
 | 6장 | `ch06-data-jdbc` | Spring Data JDBC: 애그리거트, 리포지토리, @Query, 낙관적 잠금 |
 | 7장 | `ch07-jdbc-plus` | Spring JDBC Plus, Flashcard 완성판(SRS, 오늘 복습 큐, 스마트 덱, 통계, CSV) |
 | 8장 | `ch08-kotlin` | Kotlin 팁: data class, 확장 함수, nullable 타입 |
+| 9장 | `ch09-data-jdbc-deep` | Spring Data JDBC 심화: 페이징/정렬, @Embedded, AggregateReference, 감사, 컨버터, 콜백 |
+| 10장 | `ch10-jdbc-plus-deep` | Spring JDBC Plus 심화: soft delete, 애그리거트 단일 쿼리 조회, saveBatch, 파라미터 소스 확장 |
 
 ## 요구 사항
 

@@ -102,9 +102,8 @@ include::{examples}/ch08-kotlin/src/test/kotlin/flashcard/kotlin/CardRepositoryT
 * *Spring JDBC Plus*: Kotlin을 공식 지원하며, `spring-data-jdbc-plus-sql-kotlin` 모듈이 Kotlin DSL을 제공한다. 7장의 SQL 클래스와 리포지토리 구현 패턴도 Kotlin에서 동일하게 쓸 수 있다.
 * *coroutine*: 이 책의 범위 밖이지만, JDBC는 블로킹 API이므로 coroutine에서 쓸 때는 ``Dispatchers.IO``로 감싸는 것이 관례다.
 
-=== 책을 마치며
+=== 다음으로
 
 JDBC 표준에서 출발해 템플릿, 트랜잭션 추상화, 자동 설정, 리포지토리, 확장 라이브러리, 그리고 다른 언어까지 올라왔다.
-층이 올라갈수록 코드는 줄었지만, 밑층이 사라진 적은 한 번도 없었다.
-어떤 프레임워크를 쓰든 결국 SQL이 커넥션을 타고 흐른다는 사실을 기억하는 한, 어느 층에서 문제가 생겨도 내려가 볼 수 있다.
-그 감각이 이 책이 남기고 싶은 전부다.
+기술의 층은 다 오른 셈이지만, 각 층에는 아직 소개하지 못한 방이 남아 있다.
+마지막 두 장에서 Spring Data JDBC와 Spring JDBC Plus의 심화 기능을 마저 둘러보고 책을 맺는다.
