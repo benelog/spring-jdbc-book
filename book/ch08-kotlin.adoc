@@ -103,6 +103,29 @@ include::{examples}/ch08-kotlin/src/main/kotlin/flashcard/kotlin/CardRepository.
 include::{examples}/ch08-kotlin/src/main/kotlin/flashcard/kotlin/CardRepository.kt[tag=lambda]
 ----
 
+==== JdbcClient의 확장 함수는 직접 만든다
+
+2장에서 소개한 ``JdbcClient``는 fluent API라서 Kotlin 문법과도 잘 어울린다.
+다만 이 책을 쓰는 시점의 ``spring-jdbc``에 들어 있는 공식 Kotlin 확장 함수는 앞에서 본 템플릿용(``JdbcOperations``, ``MapSqlParameterSource``)까지라서, ``JdbcClient``에서는 매핑 타입을 ``query(Card::class.java)``처럼 클래스 리터럴로 넘겨야 한다.
+이 공백은 reified 확장 함수를 직접 선언해 메꿀 수 있다.
+
+[source,kotlin,indent=0]
+----
+include::{examples}/ch08-kotlin/src/main/kotlin/flashcard/kotlin/JdbcClientExtensions.kt[tag=extension]
+----
+
+``query<Card>()``처럼 타입 인자를 명시해 호출하면 타입 파라미터가 없는 기존 멤버 메서드 ``query()``는 후보에서 빠지므로, 같은 이름이어도 확장 함수와 충돌하지 않는다.
+마지막의 캐스트는 Spring Framework 7이 JSpecify 널 표기로 "매핑 결과 값이 null일 수도 있다"고 보수적으로 선언한 것을, non-null 타입으로 매핑하는 우리 사용법에 맞게 좁혀 주는 처리다.
+이 확장을 쓰면 ``JdbcClient`` 기반 저장소가 이렇게 정리된다.
+
+[source,kotlin,indent=0]
+----
+include::{examples}/ch08-kotlin/src/main/kotlin/flashcard/kotlin/CardClientRepository.kt[tag=class]
+----
+
+``optional()``이 돌려주는 Java ``Optional``은 Kotlin 표준 라이브러리의 ``getOrNull()``로 바로 nullable 타입이 된다.
+"없으면 null"이라는 이 장의 관용구가 ``JdbcClient``에서도 그대로 유지되는 셈이다.
+
 === 테스트: @DisplayName과 AssertJ
 
 다른 장과 마찬가지로 테스트 메서드 이름은 간결하게 두고, 자세한 설명은 ``@DisplayName``에 우리말로 적는다.
