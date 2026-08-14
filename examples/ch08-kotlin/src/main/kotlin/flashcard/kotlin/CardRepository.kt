@@ -2,9 +2,11 @@ package flashcard.kotlin
 
 import javax.sql.DataSource
 import org.springframework.jdbc.core.DataClassRowMapper
+import org.springframework.jdbc.core.JdbcOperations
 import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.jdbc.core.namedparam.BeanPropertySqlParameterSource
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcOperations
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate
 import org.springframework.jdbc.core.namedparam.set
 import org.springframework.jdbc.core.queryForObject
@@ -13,8 +15,8 @@ import org.springframework.jdbc.core.simple.SimpleJdbcInsert
 // tag::class[]
 class CardRepository(dataSource: DataSource) {
 
-    private val jdbc = NamedParameterJdbcTemplate(dataSource)
-    private val plainJdbc = JdbcTemplate(dataSource)
+    private val jdbc: NamedParameterJdbcOperations = NamedParameterJdbcTemplate(dataSource)
+    private val plainJdbc: JdbcOperations = JdbcTemplate(dataSource)
     private val cardInsert = SimpleJdbcInsert(dataSource)
         .withTableName("cards")
         .usingGeneratedKeyColumns("id")

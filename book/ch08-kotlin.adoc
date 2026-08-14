@@ -61,6 +61,23 @@ include::{examples}/ch08-kotlin/src/main/kotlin/flashcard/kotlin/CardRepository.
 호출하는 쪽은 ``cards.findById(1)?.text ?: "없음"``처럼 안전 호출과 엘비스 연산자로 잇는다.
 컴파일러가 null 처리를 강제하므로, Java에서 ``Optional``을 벗겨 쓰다 나는 실수가 원천 봉쇄된다.
 
+=== checked 예외가 없는 언어에서의 예외 처리
+
+Kotlin에는 checked 예외가 없다.
+``SQLException``을 던지는 Java 메서드를 호출해도 컴파일러가 try-catch나 `throws` 선언을 요구하지 않는다.
+2장에서 본 "catch 절에서 할 것이 없는데도 처리를 강요당하는" 문제를 Kotlin은 언어 차원에서 제거한 셈이다.
+Kotlin 공식 문서도 대규모 코드베이스에서 checked 예외가 생산성을 떨어뜨리고 오히려 예외를 삼키는 코드를 낳는다는 점을 이 설계의 근거로 든다.
+JDBC보다 뒤에 태어난 언어가 JDBC 시대의 교훈을 문법에 반영한 결과다.
+
+그렇다고 Spring JDBC의 예외 번역이 Kotlin에서 덜 중요해지는 것은 아니다.
+checked냐 아니냐는 "처리를 강요당하는가"의 문제일 뿐이고, `DataAccessException` 계층의 본질은 DB마다 다른 에러 코드를 의미 있는 타입으로 바꿔 주는 번역에 있다.
+Kotlin에서 순수 JDBC를 직접 쓰면 처리 강요는 사라지지만 ``SQLException`` 하나로 뭉뚱그려진 타입은 그대로다.
+`DuplicateKeyException` 같은 세분화된 타입만 골라 잡는 코드는 Kotlin에서도 똑같이 유효하다.
+
+반대 방향의 상호 운용도 알아 두자.
+Kotlin 함수가 던지는 예외를 Java 쪽에서 checked 예외로 다뤄야 한다면 ``@Throws(SQLException::class)`` 애너테이션으로 `throws` 선언을 바이트코드에 만들어 줄 수 있다.
+Spring JDBC 위에서는 unchecked 예외만 오가므로 이런 선언이 필요할 일은 거의 없다.
+
 === Spring이 제공하는 Kotlin 확장 함수
 
 ``spring-jdbc``에는 Kotlin 전용 확장 함수가 들어 있다.

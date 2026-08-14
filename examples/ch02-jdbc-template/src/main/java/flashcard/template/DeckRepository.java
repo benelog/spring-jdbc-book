@@ -6,6 +6,7 @@ import java.util.Objects;
 
 import javax.sql.DataSource;
 
+import org.springframework.jdbc.core.JdbcOperations;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.simple.SimpleJdbcInsert;
 
@@ -16,7 +17,7 @@ import org.springframework.jdbc.core.simple.SimpleJdbcInsert;
 public class DeckRepository {
 
     // tag::init[]
-    private final JdbcTemplate jdbc;
+    private final JdbcOperations jdbc;
     private final SimpleJdbcInsert deckInsert;
 
     public DeckRepository(DataSource dataSource) {
