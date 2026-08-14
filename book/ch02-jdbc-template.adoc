@@ -1,0 +1,232 @@
+== Spring JDBC: JdbcTemplate과 NamedParameterJdbcTemplate
+
+1장의 마지막에서 순수 JDBC의 세 가지 고통을 꼽았다.
+자원 정리 상용구, checked 예외, 수동 트랜잭션 관리.
+Spring JDBC는 이 중 앞의 둘을 이 장에서, 나머지 하나를 다음 두 장에서 해결한다.
+
+Spring JDBC의 핵심은 *템플릿 콜백 패턴*이다.
+커넥션 획득 → SQL 실행 → 결과 처리 → 자원 반납이라는 정해진 절차(템플릿)는 라이브러리가 수행하고, 호출하는 쪽은 그때그때 달라지는 부분(SQL, 파라미터, 행 매핑)만 채워 넣는다.
+그 템플릿의 이름이 `JdbcTemplate`이고, 파라미터에 이름을 붙일 수 있게 확장한 것이 `NamedParameterJdbcTemplate`이다.
+
+이 장의 예제 모듈은 `examples/ch02-jdbc-template`이다.
+아직 Spring 컨테이너 없이, `spring-jdbc` 라이브러리만 가져다 일반 Java 코드에서 사용한다.
+Spring JDBC는 프레임워크 전체를 도입하지 않아도 이렇게 라이브러리처럼 쓸 수 있다.
+
+=== 왜 Spring JDBC인가
+
+본격적인 사용법에 앞서, "SQL을 직접 다루는 계층"의 대표 선택지인 MyBatis와 견주어 Spring JDBC의 성격을 정리해 두자.
+요지는 *배울 것은 적고, 컴파일러의 도움은 크다*는 것이다.
+
+*초기 진입이 가볍다.*
+`DataSource`만 있으면 한 줄로 시작한다.
+
+[source,java]
+----
+NamedParameterJdbcTemplate jdbc = new NamedParameterJdbcTemplate(dataSource);
+----
+
+매퍼 XML, 세션 팩토리 같은 새 개념을 익힐 필요가 없다.
+지금까지 배운 JDBC와 SQL, 그리고 Java 문법이 전부다.
+
+*매핑 코드가 Java 코드라서 컴파일러가 지켜 준다.*
+뒤에서 볼 `RowMapper`는 메서드가 하나뿐인 인터페이스이고, 그 안에서 생성자나 setter를 직접 호출한다.
+오타가 있으면 컴파일이 되지 않고, IDE의 자동 완성·코드 추적·리팩터링이 전부 동작한다.
+반면 XML이나 애너테이션 문자열 속에 적힌 `property="daekId"` 같은 오타는 빌드를 통과하고 런타임에야 드러난다.
+날짜 변환, enum 변환 같은 타입 변환도 별도의 TypeHandler 없이 매핑 코드 안에서 평범한 Java 코드로 처리한다.
+
+*동적 SQL도 Java 제어문으로 만든다.*
+`<if>`, `<foreach>` 같은 태그 문법을 새로 배우는 대신 if문과 반복문으로 SQL을 조립한다.
+분기 로직이 일반 코드이므로 단위 테스트와 커버리지 측정의 대상이 된다는 부수 효과도 있다.
+
+*동작이 예측 가능하다.*
+Spring JDBC는 호출한 시점에 그 SQL을 실행할 뿐, 세션 캐시나 지연 실행 같은 암묵적인 동작이 없다.
+배치 실행조차 `batchUpdate`라는 별도 메서드로 의도를 드러내야 한다.
+
+물론 Spring JDBC가 끝판왕이라는 뜻은 아니다.
+SQL 문자열 자체의 타입 안전성까지 원한다면 Querydsl SQL이나 jOOQ가, 풍부한 객체 매핑이 필요하다면 JPA가 다음 선택지다.
+이 책의 후반부에서 다루는 Spring Data JDBC와 Spring JDBC Plus는 Spring JDBC의 단순함을 지키면서 반복 작업을 더 줄이는 중간 지점이다.
+
+=== JdbcTemplate: 물음표 파라미터
+
+`JdbcTemplate`부터 보자.
+덱 저장소를 `JdbcTemplate`으로 만들면 이렇다.
+
+[source,java,indent=0]
+----
+include::{examples}/ch02-jdbc-template/src/main/java/flashcard/template/DeckRepository.java[tag=init]
+----
+
+`JdbcTemplate`과 `NamedParameterJdbcTemplate`은 상태를 갖지 않아 *스레드 안전*하다.
+요청마다 새로 만들 필요 없이 이렇게 필드에 저장해 재사용하는 것이 표준 사용법이다.
+
+조회는 `query` 메서드에 SQL과 `RowMapper`를 넘긴다.
+`RowMapper`는 "한 행을 객체 하나로 바꾸는 방법"을 담는 함수형 인터페이스라 람다로 적을 수 있다.
+
+[source,java,indent=0]
+----
+include::{examples}/ch02-jdbc-template/src/main/java/flashcard/template/DeckRepository.java[tag=query]
+----
+
+1장의 `findByDeckId`와 비교해 보라.
+커넥션, 문장, 결과 집합, 반복문, 예외 처리가 전부 사라지고 SQL과 매핑만 남았다.
+`while (resultSet.next())` 루프는 템플릿이 대신 돌려 주므로, `RowMapper`는 정말로 "한 행"만 생각하면 된다.
+
+값 하나만 필요한 집계 조회는 `queryForObject`에 원하는 타입을 알려 준다.
+
+[source,java,indent=0]
+----
+include::{examples}/ch02-jdbc-template/src/main/java/flashcard/template/DeckRepository.java[tag=query-for-object]
+----
+
+변경은 `update` 하나로 통일된다. insert, update, delete 모두 같은 메서드를 쓰고, 영향받은 행 수를 돌려준다.
+
+[source,java,indent=0]
+----
+include::{examples}/ch02-jdbc-template/src/main/java/flashcard/template/DeckRepository.java[tag=update]
+----
+
+한편 위의 초기화 코드에 등장한 `SimpleJdbcInsert`는 insert SQL을 아예 쓰지 않게 해 준다.
+테이블 이름과 자동 생성 키 컬럼만 알려 주면 메타데이터를 읽어 insert 문을 만들어 주고, 채번된 키를 돌려준다.
+
+[source,java,indent=0]
+----
+include::{examples}/ch02-jdbc-template/src/main/java/flashcard/template/DeckRepository.java[tag=insert]
+----
+
+=== 예외는 어디로 갔나: DataAccessException
+
+위 코드 어디에도 `throws SQLException`이 없다.
+Spring JDBC는 `SQLException`을 잡아 *unchecked* 예외인 `DataAccessException` 계층으로 번역해 던진다.
+
+이 번역은 단순한 포장이 아니다.
+DB마다 제각각인 에러 코드를 해석해서 `DuplicateKeyException`(키 중복), `DataIntegrityViolationException`(제약 조건 위반), `BadSqlGrammarException`(SQL 문법 오류)처럼 *의미 있는 타입*으로 바꿔 준다.
+호출하는 쪽은 관심 있는 예외만 골라 잡으면 되고, 나머지는 전파되도록 두면 된다.
+DB를 바꿔도 예외 타입은 그대로라는 점도 중요하다.
+
+=== NamedParameterJdbcTemplate: 이름 있는 파라미터
+
+물음표 파라미터는 개수가 늘어나면 순서 맞추기가 고역이 된다.
+`update cards set text = ?, meaning = ? where id = ?`에서 물음표가 예닐곱 개로 늘어난 모습을 상상해 보라.
+`NamedParameterJdbcTemplate`은 물음표 대신 `:text`, `:meaning`처럼 이름을 쓴다.
+이 책이 기본으로 권장하는 방식이다.
+
+카드 저장소의 초기화와 조회 코드를 보자.
+
+[source,java,indent=0]
+----
+include::{examples}/ch02-jdbc-template/src/main/java/flashcard/template/CardRepository.java[tag=init]
+----
+
+[source,java,indent=0]
+----
+include::{examples}/ch02-jdbc-template/src/main/java/flashcard/template/CardRepository.java[tag=select-list]
+----
+
+파라미터는 `Map`으로 넘기는 것이 가장 간단하다.
+SQL은 Java의 텍스트 블록(`"""`)으로 적어 여러 줄을 그대로 담는다.
+복사해서 DB 콘솔에 붙여 실행해 볼 수 있는 형태가 유지된다는 것이 생각보다 큰 장점이다.
+
+==== RowMapper를 직접 안 쓰는 법: DataClassRowMapper
+
+`cardMapper` 필드의 정체는 이것이다.
+
+[source,java]
+----
+private final RowMapper<Card> cardMapper = DataClassRowMapper.newInstance(Card.class);
+----
+
+`DataClassRowMapper`는 record의 생성자 파라미터 이름과 조회 결과의 컬럼 이름을 맞춰 자동으로 매핑한다.
+`deck_id`처럼 스네이크 표기 컬럼은 `deckId`처럼 캐멀 표기 프로퍼티에 알아서 연결된다.
+일반 클래스의 setter 기반 매핑이 필요하면 형제인 `BeanPropertyRowMapper`를 쓴다.
+자동 매핑으로 안 되는 특수한 변환이 필요할 때만 람다로 직접 `RowMapper`를 쓰면 된다.
+
+==== 파라미터를 객체에서: SqlParameterSource
+
+파라미터가 많을 때 Map을 일일이 채우는 대신, 객체의 프로퍼티를 그대로 파라미터로 쓰는 `BeanPropertySqlParameterSource`가 있다.
+insert에서 채번 키까지 받아 오는 코드다.
+
+[source,java,indent=0]
+----
+include::{examples}/ch02-jdbc-template/src/main/java/flashcard/template/CardRepository.java[tag=insert]
+----
+
+`Card`의 `deckId`, `text`, `meaning` 프로퍼티가 같은 이름의 `:deckId`, `:text`, `:meaning`에 자동으로 연결된다.
+수정도 마찬가지다.
+
+[source,java,indent=0]
+----
+include::{examples}/ch02-jdbc-template/src/main/java/flashcard/template/CardRepository.java[tag=update]
+----
+
+한 건 조회에서 결과가 없으면 `queryForObject`는 `EmptyResultDataAccessException`을 던진다.
+"없을 수 있음"이 자연스러운 조회라면 `Optional`로 감싸 주는 것이 관례다.
+
+[source,java,indent=0]
+----
+include::{examples}/ch02-jdbc-template/src/main/java/flashcard/template/CardRepository.java[tag=select-one]
+----
+
+=== IN 절: 컬렉션을 그대로 파라미터로
+
+여러 id의 카드를 한 번에 조회하고 싶다면?
+순수 JDBC라면 id 개수만큼 물음표를 이어 붙이는 코드를 짜야 하지만, 이름 있는 파라미터는 컬렉션을 그대로 받는다.
+
+[source,java,indent=0]
+----
+include::{examples}/ch02-jdbc-template/src/main/java/flashcard/template/CardRepository.java[tag=in-clause]
+----
+
+`:ids` 자리에 리스트 크기만큼의 플레이스홀더가 자동으로 전개된다.
+
+=== 배치: batchUpdate
+
+1장에서 `addBatch`/`executeBatch`로 직접 만들었던 대량 입력은 `batchUpdate` 한 번으로 끝난다.
+
+[source,java,indent=0]
+----
+include::{examples}/ch02-jdbc-template/src/main/java/flashcard/template/CardRepository.java[tag=batch]
+----
+
+`SqlParameterSourceUtils.createBatch`는 객체 리스트를 파라미터 소스 배열로 바꿔 준다.
+CSV 가져오기의 대량 insert가 이 메서드 하나로 처리된다.
+
+=== 동적 SQL: Java 제어문으로
+
+검색 화면처럼 조건이 있을 수도 없을 수도 있는 조회는 SQL을 조립해야 한다.
+Spring JDBC에서는 이것도 평범한 Java 코드다.
+
+[source,java,indent=0]
+----
+include::{examples}/ch02-jdbc-template/src/main/java/flashcard/template/CardRepository.java[tag=dynamic-sql]
+----
+
+조건이 추가될 때 SQL 조각과 파라미터가 항상 짝으로 움직이므로, 조건과 파라미터가 어긋나는 실수를 하기 어렵다.
+분기가 많아지면 SQL 조립 부분만 별도 클래스로 뽑아 단위 테스트를 붙일 수도 있다.
+
+=== 테스트: EmbeddedDatabaseBuilder
+
+`spring-jdbc`에는 테스트용 내장 DB를 만들어 주는 도우미도 들어 있다.
+스키마 스크립트까지 한 번에 적용된다.
+
+[source,java,indent=0]
+----
+include::{examples}/ch02-jdbc-template/src/test/java/flashcard/template/CardRepositoryTest.java[tag=embedded]
+----
+
+`generateUniqueName(true)`는 테스트마다 새 이름의 DB를 만들어 서로 간섭하지 않게 한다.
+이 저장소들이 실제로 동작하는 모습은 동적 SQL 검색 테스트에서 확인할 수 있다.
+
+[source,java,indent=0]
+----
+include::{examples}/ch02-jdbc-template/src/test/java/flashcard/template/CardRepositoryTest.java[tag=search]
+----
+
+=== 정리
+
+이 장에서 순수 JDBC의 고통 두 가지가 사라졌다.
+자원 정리 상용구는 템플릿이 삼켰고, checked `SQLException`은 의미 있는 unchecked 예외 계층으로 바뀌었다.
+`DataClassRowMapper`와 `BeanPropertySqlParameterSource`는 "컬럼 ↔ 프로퍼티" 방향의 반복 작업까지 덜어 준다.
+
+남은 하나가 트랜잭션이다.
+`DeckImporter`의 commit/rollback 코드와 커넥션 돌려쓰기 문제는 아직 그대로다.
+다음 장에서 Spring의 트랜잭션 추상화가 등장한다.

@@ -1,0 +1,260 @@
+== Spring JDBC Plus와 Flashcard 완성
+
+마지막 층이다.
+Spring JDBC Plus는 네이버가 만들어 공개한 Spring Data JDBC 확장 라이브러리로, 사내 여러 서비스에서 쓰이며 다듬어졌다.
+방향은 명확하다. *Spring Data JDBC의 리포지토리 편의는 유지하되, 커스텀 SQL을 일급 시민으로 대접한다.*
+
+6장에서 남긴 아쉬움을 돌아보면 이 라이브러리가 무엇을 채우는지 보인다.
+
+* `@Query`의 SQL마다 컬럼 목록을 나열하는 반복 → 엔티티 정의에서 SELECT 컬럼 목록을 생성해 주는 `SqlGeneratorSupport`.
+* SQL 문자열과 실행 코드가 애너테이션에 뒤섞이는 문제 → SQL은 SQL 클래스로, 실행은 리포지토리 구현으로 분리하는 `JdbcRepositorySupport`.
+* `save`의 insert/update 자동 판단 → 의도를 드러내는 `insert`/`update` 메서드를 가진 `JdbcRepository` 인터페이스.
+
+이 장에서는 Spring JDBC Plus의 사용법을 익히면서, 서문에서 약속한 Flashcard의 요구사항 전부 — 간격 반복 복습, 오늘 복습 큐, 재도전 라운드, 태그, 스마트 덱, 통계, CSV — 를 완성한다.
+예제 모듈은 `examples/ch07-jdbc-plus`다.
+
+=== 설정
+
+의존성은 스타터 둘이다.
+
+[source,groovy,indent=0]
+----
+include::{examples}/ch07-jdbc-plus/build.gradle[tag=plus]
+----
+
+`-sql` 스타터가 커스텀 SQL 지원(`JdbcRepositorySupport` 등)을, `-repository` 스타터가 `JdbcRepository` 인터페이스와 그 자동 설정을 가져온다.
+
+프로퍼티 하나가 더 필요하다.
+
+[source,properties,indent=0]
+----
+include::{examples}/ch07-jdbc-plus/src/main/resources/application.properties[tag=plus]
+----
+
+Plus의 리포지토리 자동 설정은 표준 Spring Data JDBC 리포지토리 자동 설정과 겹치지 않도록, 표준 쪽이 꺼져 있을 때만 동작하게 만들어져 있다.
+그래서 표준을 끄고 Plus를 켠다.
+리포지토리를 만들어 주는 주체가 바뀔 뿐, 엔티티 매핑 등 나머지는 전부 Spring Data JDBC 그대로다.
+
+또 하나, 클래스패스에 Spring Data 모듈이 여럿이면 Spring Data는 strict 모드로 들어가 *`@Table`이 붙은 엔티티만* 리포지토리 대상으로 인정한다.
+6장에서 배운 식별자 인용 규칙에 따라, 이 모듈의 엔티티들은 전부 대문자 이름의 `@Table`을 달고 있다.
+
+=== 완성판 스키마
+
+요구사항을 테이블로 옮기면 일곱 개가 된다.
+
+[source,sql,indent=0]
+----
+include::{examples}/ch07-jdbc-plus/src/main/resources/schema.sql[tag=schema]
+----
+
+설계에서 눈여겨볼 결정 두 가지.
+
+*카드는 독립 애그리거트다.*
+6장에서는 덱이 카드를 품었지만, 완성판에서 카드는 복습 상태·기록·태그와 연결되는 조회의 중심이다.
+덱 애그리거트에 묶어 두면 카드 한 장을 판정할 때마다 덱 전체를 다시 저장하게 된다.
+그래서 덱과 카드는 각각의 애그리거트로 두고 `deck_id`로만 참조한다.
+
+*복습 "상태"와 복습 "기록"을 분리했다.*
+`review_state`는 카드마다 한 행으로 현재 일정과 누적 성적을 담고, `review_log`는 판정 한 번마다 한 행씩 쌓인다.
+"오늘 복습 큐"는 상태를, 통계는 기록을 읽는다.
+상태는 기록으로부터 다시 계산할 수 있는 값이지만, 큐 조회 때마다 전체 기록을 집계할 수는 없으므로 비정규화해 둔 것이다.
+
+=== 도메인: 간격 반복은 record 안에
+
+간격 반복 알고리즘은 DB도 프레임워크도 모르는 순수한 로직이므로, `ReviewState` record의 메서드로 담는다.
+
+[source,java,indent=0]
+----
+include::{examples}/ch07-jdbc-plus/src/main/java/flashcard/plus/domain/ReviewState.java[tag=srs]
+----
+
+맞히면 1일 → 6일 → 2.5배씩, 틀리면 1일로.
+순수 함수이므로 테스트가 즐겁다.
+
+[source,java,indent=0]
+----
+include::{examples}/ch07-jdbc-plus/src/test/java/flashcard/plus/domain/ReviewStateTest.java[tag=class]
+----
+
+=== 리포지토리: 인터페이스, SQL, 구현의 3분할
+
+Plus의 리포지토리는 역할이 셋으로 나뉜다.
+카드 리포지토리로 전체 모양을 보자.
+
+*(1) 인터페이스* — 표준 CRUD는 `JdbcRepository`에서 상속받고, 조건 검색은 커스텀 인터페이스로 선언한다.
+
+[source,java,indent=0]
+----
+include::{examples}/ch07-jdbc-plus/src/main/java/flashcard/plus/repository/CardRepository.java[tag=class]
+----
+
+[source,java,indent=0]
+----
+include::{examples}/ch07-jdbc-plus/src/main/java/flashcard/plus/repository/CardRepositoryCustom.java[tag=class]
+----
+
+커스텀 메서드의 목록이 그대로 요구사항의 목록이다.
+오늘 복습 큐(`findDue`), 추천 복습 두 종류(`findOftenWrong`, `findStale`), 스마트 덱의 나머지 조건(`findRecent`, `findByTagName`).
+
+*(2) SQL 클래스* — `SqlGeneratorSupport`를 상속하면 `sql` 객체를 통해 엔티티 기반 SQL 조각을 생성할 수 있다.
+
+[source,java,indent=0]
+----
+include::{examples}/ch07-jdbc-plus/src/main/java/flashcard/plus/repository/CardSql.java[tag=select-due]
+----
+
+`sql.columns(Card.class)`가 엔티티 정의에서 SELECT 컬럼 목록을 만들어 준다.
+카드에 컬럼이 추가되어도 이 SQL들은 고칠 필요가 없다.
+나머지는 텍스트 블록에 담긴 평범한 SQL이다. 2장에서 강조한 "복사해서 콘솔에 붙여 볼 수 있는 SQL"이 유지된다.
+
+오답률 조건처럼 계산이 들어가는 쿼리도 SQL로 정직하게 표현된다.
+
+[source,java,indent=0]
+----
+include::{examples}/ch07-jdbc-plus/src/main/java/flashcard/plus/repository/CardSql.java[tag=select-often-wrong]
+----
+
+*(3) 구현* — `JdbcRepositorySupport`를 상속하고, Spring Data의 관례(인터페이스 이름 + `Impl`)에 따라 자동으로 조립된다.
+
+[source,java,indent=0]
+----
+include::{examples}/ch07-jdbc-plus/src/main/java/flashcard/plus/repository/CardRepositoryImpl.java[tag=find-due]
+----
+
+`find`는 목록, `findOne`은 `Optional`, `requiredOne`은 없으면 예외.
+집계 값 하나는 `SingleValueSelectTrait`의 `selectSingleValue`로 받는다.
+결과를 `Card`로 바꾸는 매핑은 상위 클래스가 엔티티 정의를 보고 처리하므로 `RowMapper`를 쓸 일이 없다.
+
+==== 조회 전용 record와 DML
+
+엔티티가 아닌 화면용 record는 5장처럼 `RowMapper`를 지정해 받는다.
+덱 요약(카드 수 + 오늘 복습 수)이 그 예다.
+
+[source,java,indent=0]
+----
+include::{examples}/ch07-jdbc-plus/src/main/java/flashcard/plus/repository/DeckRepositoryImpl.java[tag=dto]
+----
+
+Plus는 `NamedParameterJdbcTemplate` 위에 서 있으므로, 필요하면 언제든 그 층으로 내려갈 수 있다.
+태그를 붙이는 upsert성 DML이 그렇다.
+
+[source,java,indent=0]
+----
+include::{examples}/ch07-jdbc-plus/src/main/java/flashcard/plus/repository/TagRepositoryImpl.java[tag=update]
+----
+
+한편 `smart_deck`처럼 단순한 테이블은 Plus 리포지토리에서도 표준 `@Query`를 그대로 쓸 수 있다.
+
+[source,java,indent=0]
+----
+include::{examples}/ch07-jdbc-plus/src/main/java/flashcard/plus/repository/SmartDeckRepository.java[tag=class]
+----
+
+기술 단계를 밟아 온 독자라면 이 그림이 익숙할 것이다.
+한 리포지토리 안에서 1~6장의 도구가 층층이 공존하고, 각 조회마다 가장 알맞은 층을 골라 쓴다.
+
+=== 학습 흐름: 세션, 판정, 재도전 라운드
+
+학습 세션(카드 순서, 현재 위치, 틀린 카드, 라운드)은 DB가 아니라 HTTP 세션에 담기는 짧은 상태다.
+
+[source,java,indent=0]
+----
+include::{examples}/ch07-jdbc-plus/src/main/java/flashcard/plus/service/StudySession.java[tag=class]
+----
+
+판정 하나를 기록하는 서비스 메서드가 이 장의 데이터 액세스가 모이는 곳이다.
+
+[source,java,indent=0]
+----
+include::{examples}/ch07-jdbc-plus/src/main/java/flashcard/plus/service/StudyService.java[tag=answer]
+----
+
+`JdbcRepository`의 `insert`/`update` 분리가 여기서 빛난다.
+복습 상태가 없으면 `insert`, 있으면 `update`.
+"새 객체인지" 프레임워크가 추측하게 두는 대신 코드가 의도를 말한다.
+
+요구사항의 규칙 — 재도전 라운드는 일정에 반영하지 않는다 — 가 지켜지는지는 테스트로 못 박는다.
+
+[source,java,indent=0]
+----
+include::{examples}/ch07-jdbc-plus/src/test/java/flashcard/plus/service/StudyServiceTest.java[tag=retry-round]
+----
+
+=== 스마트 덱: 조건은 데이터, 카드는 그때그때
+
+스마트 덱은 카드를 담지 않는다. 조건(enum)과 파라미터만 행으로 저장해 두고, 학습을 시작하는 순간 조건에 맞는 카드를 새로 골라 온다.
+
+[source,java,indent=0]
+----
+include::{examples}/ch07-jdbc-plus/src/main/java/flashcard/plus/domain/SmartCondition.java[tag=class]
+----
+
+[source,java,indent=0]
+----
+include::{examples}/ch07-jdbc-plus/src/main/java/flashcard/plus/service/SmartDeckService.java[tag=cards-for]
+----
+
+홈 화면의 "추천 복습" 타일 두 개는 이 중 자주 틀린 카드(3회 이상 시도, 오답률 40% 이상)와 오래 안 본 카드(7일 초과)를 미리 만들어 둔 것이다.
+날짜 기준값을 SQL의 `now()`가 아니라 서비스에서 계산해 파라미터로 넘기는 것은 테스트를 결정적으로 만들기 위해서다.
+
+=== 통계: 기록 테이블에서 집계로
+
+통계 화면의 재료는 전부 `review_log`에서 나온다.
+30일 학습량 그래프의 SQL은 날짜별 집계다.
+
+[source,java,indent=0]
+----
+include::{examples}/ch07-jdbc-plus/src/main/java/flashcard/plus/repository/ReviewLogSql.java[tag=daily]
+----
+
+연속 학습일(streak)처럼 SQL로 쓰면 오히려 난해한 계산은 날짜 목록만 받아 Java에서 처리한다.
+
+[source,java,indent=0]
+----
+include::{examples}/ch07-jdbc-plus/src/main/java/flashcard/plus/service/StatsService.java[tag=streak]
+----
+
+"집계는 SQL로, 알고리즘은 Java로"라는 분담이 여기서도 반복된다.
+
+=== CSV 가져오기: 4장의 교훈 적용
+
+CSV 가져오기는 4장에서 checked 예외 롤백 함정을 보여 준 그 기능이다.
+완성판에서는 형식 오류를 unchecked 예외로 설계해 함정 자체를 없앴고, 파싱을 전부 마친 뒤 저장을 시작해 실패를 앞당겼다.
+
+[source,java,indent=0]
+----
+include::{examples}/ch07-jdbc-plus/src/main/java/flashcard/plus/service/DeckService.java[tag=import]
+----
+
+내보내기는 카드와 태그를 각각 한 번씩 조회해 CSV 문자열로 조립한다.
+내보낸 파일을 그대로 다시 들여올 수 있다는 것(라운드트립)도 테스트로 보증한다.
+
+컨트롤러에서는 파일 업로드를 받고, 실패 시 사용자에게 몇 번째 줄이 문제인지 알려 준다.
+
+[source,java,indent=0]
+----
+include::{examples}/ch07-jdbc-plus/src/main/java/flashcard/plus/web/DeckController.java[tag=csv]
+----
+
+=== 화면 잇기
+
+컨트롤러와 템플릿은 5장의 연장이라 새 개념은 없다.
+전체 흐름이 실제로 동작하는지는 MockMvc로 학습 한 사이클을 통째로 돌려 확인한다.
+
+[source,java,indent=0]
+----
+include::{examples}/ch07-jdbc-plus/src/test/java/flashcard/plus/web/FlashcardPlusWebTest.java[tag=study-flow]
+----
+
+`./gradlew :ch07-jdbc-plus:bootRun`으로 띄우면 홈에서 오늘 복습 큐와 추천 복습 타일, 덱과 스마트 덱을 만나고, `/stats`에서 30일 그래프와 연속 학습일을 볼 수 있다.
+서문에서 약속한 Flashcard가 완성됐다.
+
+=== 정리
+
+Spring JDBC Plus는 새로운 패러다임이 아니라 배치의 재조정이다.
+SQL은 SQL 클래스에, 실행 코드는 리포지토리 구현에, 표준 CRUD는 인터페이스 상속에.
+그 결과 커스텀 SQL이 많은 실무형 앱에서도 각 코드가 제자리를 갖는다.
+
+완성된 앱의 데이터 액세스 코드를 훑어보면 이 책이 지나온 층이 모두 살아 있다.
+스키마와 SQL(1장), 이름 있는 파라미터와 매핑(2장), 트랜잭션 경계(3~4장), 자동 설정과 테스트 슬라이스(5장), 애그리거트와 리포지토리(6장), 그리고 그것들을 묶는 Plus(7장).
+아래층을 알기에 위층의 선택이 자유롭다.

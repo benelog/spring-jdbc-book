@@ -1,0 +1,126 @@
+== AOP 트랜잭션: @Transactional
+
+3장의 `TransactionTemplate`은 트랜잭션 상용구를 크게 줄였지만, 여전히 메서드 본문이 `execute` 블록에 싸여 있다.
+트랜잭션은 "이 메서드 전체"라는 경계 선언일 뿐인데, 그 선언이 코드 들여쓰기 한 겹을 차지한다.
+이 장에서는 선언을 애너테이션 한 줄로 옮기고 본문에서는 트랜잭션 코드를 완전히 지운다.
+
+이를 가능하게 하는 원리가 AOP(Aspect-Oriented Programming, 관점 지향 프로그래밍)다.
+트랜잭션 처리처럼 여러 클래스에 가로로 걸쳐 반복되는 관심사를, 각 메서드에 흩어 놓는 대신 한 곳에 모아 두고 프레임워크가 알아서 끼워 넣게 하는 기법이다.
+
+예제 모듈은 `examples/ch04-transaction-aop`다.
+이 장부터는 객체를 직접 조립하는 대신 Spring 컨테이너(ApplicationContext)가 조립을 맡는다.
+
+=== 설정: @EnableTransactionManagement
+
+Spring 컨테이너 설정은 Java 클래스로 한다.
+
+[source,java,indent=0]
+----
+include::{examples}/ch04-transaction-aop/src/main/java/flashcard/aop/AppConfig.java[tag=class]
+----
+
+* `@ComponentScan`: `@Service`, `@Repository`가 붙은 클래스를 찾아 빈으로 등록한다.
+* `@EnableTransactionManagement`: `@Transactional`을 해석하는 기반 시설을 켠다.
+* 트랜잭션 매니저는 3장과 같은 `JdbcTransactionManager`를 빈으로 등록한다.
+
+저장소는 2장과 같은 코드에 `@Repository`만 붙는다.
+
+[source,java,indent=0]
+----
+include::{examples}/ch04-transaction-aop/src/main/java/flashcard/aop/DeckRepository.java[tag=init]
+----
+
+=== 선언만 남은 서비스
+
+3장의 `importDeck`이 이렇게 바뀐다.
+
+[source,java,indent=0]
+----
+include::{examples}/ch04-transaction-aop/src/main/java/flashcard/aop/DeckService.java[tag=import-deck]
+----
+
+본문은 비즈니스 로직뿐이다.
+메서드가 정상적으로 끝나면 커밋, unchecked 예외가 빠져나가면 롤백이라는 규칙은 3장과 같다.
+
+조회 전용 메서드에는 읽기 전용 힌트를 준다.
+
+[source,java,indent=0]
+----
+include::{examples}/ch04-transaction-aop/src/main/java/flashcard/aop/DeckService.java[tag=read-only]
+----
+
+=== 동작 원리: 프록시
+
+애너테이션만 붙였는데 트랜잭션이 어떻게 시작될까?
+Spring 컨테이너는 `@Transactional`이 붙은 빈을 등록할 때 그 빈을 감싸는 *프록시*(proxy)를 대신 등록한다.
+프록시는 원본과 같은 타입으로 보이지만, 메서드 호출을 가로채 "트랜잭션 시작 → 원본 메서드 호출 → 커밋/롤백"을 수행한다.
+3장에서 `TransactionTemplate.execute`가 하던 일을 프록시가 대신하는 셈이다.
+
+주입받은 빈의 실제 클래스를 찍어 보면 확인할 수 있다.
+
+[source,java,indent=0]
+----
+include::{examples}/ch04-transaction-aop/src/main/java/flashcard/aop/AopQuickTour.java[tag=proxy]
+----
+
+실행하면 `flashcard.aop.DeckService$$SpringCGLIB$$0` 같은 이름이 나온다.
+`DeckService`를 상속해 만들어진 프록시 클래스다.
+
+프록시 방식이라는 사실에서 실무에서 중요한 주의점 하나가 따라 나온다.
+*같은 클래스 안에서 자기 메서드를 호출하면(self-invocation) 트랜잭션이 적용되지 않는다.*
+내부 호출은 프록시를 거치지 않고 원본 객체의 메서드로 직행하기 때문이다.
+`@Transactional` 메서드는 다른 빈에서 호출될 때만 프록시의 가로채기가 동작한다는 것을 기억해 두자.
+
+=== 함정: checked 예외는 롤백되지 않는다
+
+`@Transactional`의 기본 롤백 규칙은 "unchecked 예외(`RuntimeException`, `Error`)면 롤백, checked 예외면 커밋"이다.
+EJB 시절부터 내려온 관례인데, 모르고 있으면 데이터가 반쯤 저장되는 사고로 이어진다.
+
+Flashcard의 CSV 가져오기로 재현해 보자.
+CSV의 형식 오류를 checked 예외로 설계했다면?
+
+[source,java,indent=0]
+----
+include::{examples}/ch04-transaction-aop/src/main/java/flashcard/aop/DeckService.java[tag=checked-pitfall]
+----
+
+테스트가 보여 주는 결과는 명확하다.
+예외는 던져졌는데 그 전까지 저장된 덱과 카드는 커밋되어 남아 있다.
+
+[source,java,indent=0]
+----
+include::{examples}/ch04-transaction-aop/src/test/java/flashcard/aop/DeckServiceTest.java[tag=checked-pitfall]
+----
+
+해법은 `rollbackFor`로 롤백 대상을 명시하는 것이다.
+
+[source,java,indent=0]
+----
+include::{examples}/ch04-transaction-aop/src/main/java/flashcard/aop/DeckService.java[tag=rollback-for]
+----
+
+애초에 복구할 수 없는 오류라면 unchecked 예외로 설계하는 편이 낫다.
+7장의 완성판 앱에서는 CSV 형식 오류를 `RuntimeException`으로 바꿔 이 함정 자체를 피한다.
+
+=== 테스트: 스프링 컨테이너와 함께
+
+이 장의 테스트는 Spring 컨테이너를 띄워야 하므로 `spring-test`의 `@SpringJUnitConfig`를 쓴다.
+테스트 전용 설정으로 내장 DB를 물리고, 운영 설정(`AppConfig`)을 가져온다.
+
+[source,java,indent=0]
+----
+include::{examples}/ch04-transaction-aop/src/test/java/flashcard/aop/DeckServiceTest.java[tag=config]
+----
+
+=== 정리
+
+1장에서 꼽은 순수 JDBC의 세 가지 고통이 모두 사라졌다.
+자원 정리는 `JdbcTemplate`이, 예외 번역은 `DataAccessException` 계층이, 트랜잭션은 `@Transactional` 프록시가 맡는다.
+비즈니스 코드에는 SQL과 로직만 남았다.
+
+대신 새로운 종류의 앎이 필요해졌다.
+선언 한 줄 뒤에서 무슨 일이 벌어지는지 — 프록시가 끼어드는 지점, 내부 호출의 함정, checked 예외의 롤백 규칙 — 를 이해하고 있어야 한다.
+추상화의 대가는 언제나 이런 식이다.
+
+여기까지의 설정(DataSource, 트랜잭션 매니저, 컴포넌트 스캔)은 매 프로젝트 똑같이 반복된다.
+다음 장의 Spring Boot가 이 반복마저 가져간다.

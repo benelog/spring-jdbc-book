@@ -1,0 +1,24 @@
+plugins {
+    id 'org.springframework.boot'
+    id 'io.spring.dependency-management'
+}
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-webmvc'
+    implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jdbc'
+    // tag::plus[]
+    implementation 'com.navercorp.spring:spring-boot-starter-data-jdbc-plus-sql:4.0.1'
+    implementation 'com.navercorp.spring:spring-boot-starter-data-jdbc-plus-repository:4.0.1'
+    // end::plus[]
+    runtimeOnly 'org.springframework.boot:spring-boot-h2console'
+    runtimeOnly 'com.h2database:h2'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
+}
+
+tasks.register('h2', JavaExec) {
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'org.h2.tools.Console'
+    args '-url', 'jdbc:h2:./db/flashcard;AUTO_SERVER=TRUE', '-user', 'sa'
+}

@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<!-- tag::home[] -->
+<html xmlns:th="http://www.thymeleaf.org" lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>Flashcard</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<h1><a href="/">Flashcard</a></h1>
+
+<h2>내 덱</h2>
+<p th:if="${decks.isEmpty()}" class="muted">아직 덱이 없습니다. 첫 덱을 만들어 보세요.</p>
+<ul class="plain">
+    <li th:each="deck : ${decks}">
+        <a th:href="@{/decks/{id}(id=${deck.id})}" th:text="${deck.name}">덱 이름</a>
+        <span class="muted" th:text="|카드 ${deck.cardCount}장|">카드 수</span>
+    </li>
+</ul>
+
+<h2>새 덱 만들기</h2>
+<form action="/decks" method="post">
+    <input type="text" name="name" placeholder="덱 이름" required>
+    <button type="submit" class="primary">만들기</button>
+</form>
+</body>
+</html>
+<!-- end::home[] -->

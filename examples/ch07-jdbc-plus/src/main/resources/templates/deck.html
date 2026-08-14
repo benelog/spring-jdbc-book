@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="|${deck.name} - Flashcard|">덱 - Flashcard</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<h1><a href="/">Flashcard</a></h1>
+<nav><a href="/">홈</a> <a href="/stats">통계</a></nav>
+
+<p th:if="${message}" class="notice" th:text="${message}">알림</p>
+<p th:if="${error}" class="error" th:text="${error}">오류</p>
+
+<h2 th:text="${deck.name}">덱 이름</h2>
+
+<!-- tag::study-form[] -->
+<form th:action="@{/study/deck/{id}(id=${deck.id})}" method="post">
+    <select name="direction">
+        <option th:each="dir : ${directions}" th:value="${dir}" th:text="${dir.label}">방향</option>
+    </select>
+    <button type="submit" class="primary">학습 시작</button>
+</form>
+<!-- end::study-form[] -->
+
+<h3 th:text="|카드 (${cards.size()}장)|">카드</h3>
+<ul class="plain">
+    <li th:each="cardWithTags : ${cards}">
+        <span>
+            <strong th:text="${cardWithTags.card.text}">원문</strong>
+            <span class="muted" th:text="${cardWithTags.card.meaning}">뜻</span>
+            <span class="tag" th:each="tag : ${cardWithTags.tags}" th:text="${tag}">태그</span>
+        </span>
+        <span>
+            <a class="button"
+               th:href="@{/decks/{deckId}/cards/{cardId}/edit(deckId=${deck.id}, cardId=${cardWithTags.card.id})}">수정</a>
+            <form class="inline" method="post"
+                  th:action="@{/decks/{deckId}/cards/{cardId}/delete(deckId=${deck.id}, cardId=${cardWithTags.card.id})}">
+                <button type="submit">삭제</button>
+            </form>
+        </span>
+    </li>
+</ul>
+
+<h3>카드 추가</h3>
+<form th:action="@{/decks/{id}/cards(id=${deck.id})}" method="post">
+    <input type="text" name="text" placeholder="원문" required>
+    <input type="text" name="meaning" placeholder="뜻" required>
+    <input type="text" name="tags" placeholder="태그 (쉼표로 구분)">
+    <button type="submit" class="primary">추가</button>
+</form>
+
+<h3>CSV 가져오기 / 내보내기</h3>
+<!-- tag::csv[] -->
+<form th:action="@{/decks/{id}/import(id=${deck.id})}" method="post"
+      enctype="multipart/form-data">
+    <input type="file" name="file" accept=".csv,text/csv" required>
+    <button type="submit">CSV 가져오기</button>
+</form>
+<p>
+    <a class="button" th:href="@{/decks/{id}/export.csv(id=${deck.id})}">CSV 내보내기</a>
+</p>
+<!-- end::csv[] -->
+
+<h3>덱 관리</h3>
+<form th:action="@{/decks/{id}/rename(id=${deck.id})}" method="post">
+    <input type="text" name="name" th:value="${deck.name}" required>
+    <button type="submit">이름 바꾸기</button>
+</form>
+<form th:action="@{/decks/{id}/delete(id=${deck.id})}" method="post">
+    <button type="submit">덱 삭제</button>
+</form>
+</body>
+</html>

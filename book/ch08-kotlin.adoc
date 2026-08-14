@@ -1,0 +1,110 @@
+== Kotlin 프로젝트 팁
+
+마지막 장은 보너스다.
+Spring JDBC 생태계를 Kotlin 프로젝트에서 쓸 때 도움이 되는 문법과 관례를 모았다.
+Spring Framework는 Kotlin을 공식 지원하며, 이 책에서 배운 모든 층이 Kotlin에서 그대로 동작한다.
+
+예제 모듈은 `examples/ch08-kotlin`이다.
+빌드 파일에서 두 가지만 짚고 시작하자.
+
+[source,groovy,indent=0]
+----
+include::{examples}/ch08-kotlin/build.gradle[]
+----
+
+* `kotlin-reflect`: `DataClassRowMapper`와 `BeanPropertySqlParameterSource`가 Kotlin 클래스의 생성자·프로퍼티를 들여다볼 때 필요하다.
+* `org.jetbrains.kotlin.plugin.spring`: Kotlin 클래스는 기본이 `final`이라 4장에서 배운 상속 기반 프록시를 만들 수 없다. 이 플러그인이 `@Service`, `@Transactional` 등이 붙은 클래스를 자동으로 `open`으로 바꿔 `@Transactional`이 정상 동작하게 한다. Kotlin + Spring 프로젝트의 사실상 필수 플러그인이다.
+
+=== data class: record의 자리에는
+
+Java record가 하던 역할은 data class가 맡는다.
+
+[source,kotlin,indent=0]
+----
+include::{examples}/ch08-kotlin/src/main/kotlin/flashcard/kotlin/Card.kt[tag=class]
+----
+
+record보다 나은 점이 둘 있다.
+기본값 덕분에 "id 없는 새 카드"를 별도 팩터리 메서드 없이 `Card(deckId = 1, text = "...", meaning = "...")`처럼 만들 수 있고, `copy`가 "일부만 바꾼 복사본" 패턴을 대신한다.
+insert 후 채번된 id를 채워 돌려주는 코드가 한 줄이 된다.
+
+[source,kotlin,indent=0]
+----
+include::{examples}/ch08-kotlin/src/main/kotlin/flashcard/kotlin/CardRepository.kt[tag=insert]
+----
+
+`DataClassRowMapper`는 Kotlin data class의 주 생성자에도 값을 채워 주므로, 조회 매핑도 Java 때와 똑같이 자동이다.
+
+=== SQL 담기: 트리플 쿼트와 object
+
+Java의 텍스트 블록에 해당하는 것이 트리플 쿼트 문자열이다.
+SQL 상수를 모아 두는 자리로는 인스턴스가 하나뿐인 `object` 선언이 어울린다.
+
+[source,kotlin,indent=0]
+----
+include::{examples}/ch08-kotlin/src/main/kotlin/flashcard/kotlin/CardSqls.kt[tag=object]
+----
+
+동적 SQL 조립에는 `buildString`이 `StringBuilder` 상용구를 줄여 준다.
+과거 Java 프로젝트에서 멀티라인 SQL을 위해 Groovy를 섞어 쓰던 기법이 있었는데, 텍스트 블록이 생긴 지금의 Java나 Kotlin에서는 언어 하나로 해결된다.
+
+=== nullable 타입: Optional의 자리에는
+
+"없을 수도 있는 결과"를 Kotlin은 타입으로 표현한다.
+`queryForObject`의 예외를 잡는 대신, 목록 조회에 `firstOrNull()`을 조합하는 관용구가 깔끔하다.
+
+[source,kotlin,indent=0]
+----
+include::{examples}/ch08-kotlin/src/main/kotlin/flashcard/kotlin/CardRepository.kt[tag=find]
+----
+
+호출하는 쪽은 `cards.findById(1)?.text ?: "없음"`처럼 안전 호출과 엘비스 연산자로 잇는다.
+컴파일러가 null 처리를 강제하므로, Java에서 `Optional`을 벗겨 쓰다 나는 실수가 원천 봉쇄된다.
+
+=== Spring이 제공하는 Kotlin 확장 함수
+
+`spring-jdbc`에는 Kotlin 전용 확장 함수가 들어 있다.
+대표적인 것이 reified 타입 파라미터를 쓰는 `queryForObject`다.
+`Long.class` 같은 클래스 리터럴 인자가 사라진다.
+
+[source,kotlin,indent=0]
+----
+include::{examples}/ch08-kotlin/src/main/kotlin/flashcard/kotlin/CardRepository.kt[tag=reified]
+----
+
+`MapSqlParameterSource`에는 대괄호 대입을 가능하게 하는 `set` 연산자 확장이 있다.
+
+[source,kotlin,indent=0]
+----
+include::{examples}/ch08-kotlin/src/main/kotlin/flashcard/kotlin/CardRepository.kt[tag=operator]
+----
+
+`RowMapper`처럼 마지막 인자가 함수형 인터페이스인 API는 후행 람다 문법과 자연스럽게 맞물린다.
+
+[source,kotlin,indent=0]
+----
+include::{examples}/ch08-kotlin/src/main/kotlin/flashcard/kotlin/CardRepository.kt[tag=lambda]
+----
+
+=== 테스트: 백틱 이름과 kotlin.test
+
+Kotlin 테스트에서는 백틱으로 감싼 함수 이름에 공백을 쓸 수 있어, 우리말 테스트 이름이 한결 자연스럽다.
+data class의 값 동등성 덕분에 조회 결과를 통째로 비교하는 단언도 간단하다.
+
+[source,kotlin,indent=0]
+----
+include::{examples}/ch08-kotlin/src/test/kotlin/flashcard/kotlin/CardRepositoryTest.kt[tag=class]
+----
+
+=== 생태계 참고 사항
+
+* *Spring Data JDBC와 data class*: 6장의 엔티티도 data class로 쓸 수 있다. `val` 프로퍼티와 `copy` 기반의 불변 모델이 Spring Data JDBC의 "저장 시점 상태 반영" 철학과 잘 맞는다.
+* *Spring JDBC Plus*: Kotlin을 공식 지원하며, `spring-data-jdbc-plus-sql-kotlin` 모듈이 Kotlin DSL을 제공한다. 7장의 SQL 클래스와 리포지토리 구현 패턴도 Kotlin에서 동일하게 쓸 수 있다.
+* *coroutine*: 이 책의 범위 밖이지만, JDBC는 블로킹 API이므로 coroutine에서 쓸 때는 `Dispatchers.IO`로 감싸는 것이 관례다.
+
+=== 책을 마치며
+
+JDBC 표준에서 출발해 템플릿, 트랜잭션 추상화, 자동 설정, 리포지토리, 확장 라이브러리, 그리고 다른 언어까지 올라왔다.
+층이 올라갈수록 코드는 줄었지만, 밑층이 사라진 적은 한 번도 없었다.
+어떤 프레임워크를 쓰든 결국 SQL이 커넥션을 타고 흐른다는 사실을 기억하는 한, 어느 층에서 문제가 생겨도 내려가 볼 수 있다.
+그 감각이 이 책이 남기고 싶은 전부다.

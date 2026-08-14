@@ -1,0 +1,10 @@
+rootProject.name = 'spring-jdbc-book-examples'
+
+include 'ch01-jdbc-basics'
+include 'ch02-jdbc-template'
+include 'ch03-transaction-template'
+include 'ch04-transaction-aop'
+include 'ch05-boot-jdbc'
+include 'ch06-data-jdbc'
+include 'ch07-jdbc-plus'
+include 'ch08-kotlin'

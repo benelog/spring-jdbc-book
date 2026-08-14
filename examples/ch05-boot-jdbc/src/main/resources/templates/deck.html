@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="|${deck.name} - Flashcard|">덱 - Flashcard</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<h1><a href="/">Flashcard</a></h1>
+
+<h2 th:text="${deck.name}">덱 이름</h2>
+
+<p>
+    <a class="button primary" th:href="@{/decks/{id}/study(id=${deck.id})}">학습 시작</a>
+</p>
+
+<!-- tag::cards[] -->
+<ul class="plain">
+    <li th:each="card : ${cards}">
+        <span>
+            <strong th:text="${card.text}">원문</strong>
+            <span class="muted" th:text="${card.meaning}">뜻</span>
+        </span>
+        <form class="inline" method="post"
+              th:action="@{/decks/{deckId}/cards/{cardId}/delete(deckId=${deck.id}, cardId=${card.id})}">
+            <button type="submit">삭제</button>
+        </form>
+    </li>
+</ul>
+<!-- end::cards[] -->
+
+<h3>카드 추가</h3>
+<form th:action="@{/decks/{id}/cards(id=${deck.id})}" method="post">
+    <input type="text" name="text" placeholder="원문" required>
+    <input type="text" name="meaning" placeholder="뜻" required>
+    <button type="submit" class="primary">추가</button>
+</form>
+
+<h3>덱 관리</h3>
+<form th:action="@{/decks/{id}/delete(id=${deck.id})}" method="post">
+    <button type="submit">덱 삭제</button>
+</form>
+</body>
+</html>

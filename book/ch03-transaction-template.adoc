@@ -1,0 +1,91 @@
+== TransactionTemplate: 트랜잭션 코드를 걷어 내기
+
+1장의 `DeckImporter`를 다시 떠올려 보자.
+`setAutoCommit(false)`로 시작해 `commit()`과 `rollback()`으로 끝나는 코드, 그리고 트랜잭션에 묶인 커넥션을 메서드마다 인자로 끌고 다니던 구조.
+이 장에서는 Spring의 트랜잭션 추상화가 이 둘을 어떻게 해결하는지 본다.
+
+예제 모듈은 `examples/ch03-transaction-template`이다.
+
+=== PlatformTransactionManager: 트랜잭션의 추상화
+
+Spring 트랜잭션의 중심에는 `PlatformTransactionManager` 인터페이스가 있다.
+"트랜잭션을 시작하고, 커밋하고, 롤백한다"는 세 동작의 추상화다.
+JDBC라면 커넥션의 autoCommit을 조작하는 구현체를, JPA라면 `EntityManager`를 조작하는 구현체를 꽂는다.
+비즈니스 코드는 이 인터페이스만 바라보므로, 데이터 액세스 기술이 바뀌어도 트랜잭션 코드는 그대로다.
+
+JDBC용 구현체로는 `DataSourceTransactionManager`, 그리고 그것을 상속하며 예외 번역까지 더한 `JdbcTransactionManager`가 있다.
+Spring 5.3부터는 `JdbcTransactionManager`가 권장된다.
+
+[source,java,indent=0]
+----
+include::{examples}/ch03-transaction-template/src/main/java/flashcard/tx/TxQuickTour.java[tag=wiring]
+----
+
+=== 커넥션 돌려쓰기 문제는 어떻게 풀리나
+
+1장에서 트랜잭션의 모든 작업이 같은 커넥션을 써야 해서 커넥션을 인자로 넘겨야 했다.
+Spring은 이 문제를 *스레드에 커넥션을 묶어 두는 방식*으로 해결한다.
+
+트랜잭션이 시작되면 트랜잭션 매니저가 커넥션을 얻어 현재 스레드에 바인딩해 둔다.
+`JdbcTemplate`을 비롯한 Spring의 데이터 액세스 코드는 커넥션이 필요할 때 `DataSource`에서 바로 꺼내는 대신 "이 스레드에 진행 중인 트랜잭션의 커넥션이 있는가"를 먼저 확인하고, 있으면 그것을 쓴다.
+그래서 *같은 `DataSource`를 바라보는 저장소들은 아무 인자도 주고받지 않아도 자동으로 같은 트랜잭션에 참여한다*.
+
+이 덕분에 저장소 코드는 2장에서 만든 그대로이고, 트랜잭션은 바깥에서 경계만 정해 주면 된다.
+
+=== TransactionTemplate: execute 안이 곧 트랜잭션
+
+경계를 정하는 첫 번째 도구가 `TransactionTemplate`이다.
+2장의 `JdbcTemplate`과 같은 템플릿 콜백 패턴으로, "시작 → 실행 → 커밋/롤백"이라는 절차를 템플릿이 맡고 실행할 내용만 콜백으로 받는다.
+
+[source,java,indent=0]
+----
+include::{examples}/ch03-transaction-template/src/main/java/flashcard/tx/DeckService.java[tag=init]
+----
+
+CSV 가져오기에 해당하는 "덱과 카드를 한 번에 저장"은 이렇게 된다.
+
+[source,java,indent=0]
+----
+include::{examples}/ch03-transaction-template/src/main/java/flashcard/tx/DeckService.java[tag=execute]
+----
+
+`execute`에 넘긴 람다가 정상적으로 끝나면 커밋되고, unchecked 예외가 빠져나가면 롤백된다.
+1장의 `DeckImporter`와 비교하면 try-catch-finally, commit, rollback, setAutoCommit이 전부 사라졌다.
+람다의 반환값은 `execute`의 반환값이 되므로, 새로 만든 덱의 id를 그대로 돌려줄 수 있다.
+
+반환값이 필요 없다면 `executeWithoutResult`를 쓴다.
+두 덱을 합치는 작업처럼 여러 변경을 묶을 때다.
+
+[source,java,indent=0]
+----
+include::{examples}/ch03-transaction-template/src/main/java/flashcard/tx/DeckService.java[tag=without-result]
+----
+
+롤백이 실제로 동작하는지는 1장과 같은 방식으로 테스트한다.
+저장소가 던지는 예외가 이제 `DataAccessException`이라는 점만 다르다.
+
+[source,java,indent=0]
+----
+include::{examples}/ch03-transaction-template/src/test/java/flashcard/tx/DeckServiceTest.java[tag=rollback]
+----
+
+=== 트랜잭션 옵션
+
+`TransactionTemplate`은 트랜잭션의 속성도 담는다.
+자주 쓰는 것 세 가지만 짚어 두자.
+
+* `setReadOnly(true)`: 읽기 전용 힌트. 드라이버와 DB가 최적화에 활용할 수 있고, 실수로 변경 쿼리를 실행하면 DB에 따라 거부되기도 한다.
+* `setTimeout(초)`: 트랜잭션 제한 시간.
+* `setPropagationBehavior(...)`: 전파(propagation) 방식. 기본값 `REQUIRED`는 "진행 중인 트랜잭션이 있으면 참여하고, 없으면 새로 시작"이다. 안쪽에서 별도 트랜잭션을 강제하는 `REQUIRES_NEW` 등이 있다.
+
+전파 방식 덕분에 트랜잭션 메서드가 다른 트랜잭션 메서드를 불러도 자연스럽게 하나의 트랜잭션으로 합류한다.
+`importDeck`을 더 큰 작업의 일부로 호출하면, 새 트랜잭션을 만드는 대신 바깥 트랜잭션에 참여한다.
+
+=== 정리
+
+`PlatformTransactionManager`가 트랜잭션 제어를 추상화하고, 스레드 바인딩이 커넥션 돌려쓰기 문제를 지웠으며, `TransactionTemplate`이 상용구를 걷어 냈다.
+이제 트랜잭션 경계는 `execute` 블록으로 명확하게 보인다.
+
+그런데 서비스 메서드 대부분이 통째로 트랜잭션이라면, 모든 메서드 본문을 `execute`로 감싸는 것조차 반복이다.
+"이 메서드는 트랜잭션 안에서 실행하라"고 선언만 하고 코드에서는 아예 사라지게 할 수 없을까?
+그것이 다음 장의 `@Transactional`이다.

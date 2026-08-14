@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>통계 - Flashcard</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<h1><a href="/">Flashcard</a></h1>
+<nav><a href="/">홈</a> <a href="/stats">통계</a></nav>
+
+<!-- tag::summary[] -->
+<div class="tile-row">
+    <div class="tile">
+        <div>연속 학습일</div>
+        <div class="count" th:text="|${stats.streakDays}일|">0일</div>
+    </div>
+    <div class="tile">
+        <div>총 복습</div>
+        <div class="count" th:text="|${stats.totalReviews}회|">0회</div>
+    </div>
+    <div class="tile">
+        <div>정답률</div>
+        <div class="count" th:text="|${stats.accuracyPercent}%|">0%</div>
+    </div>
+</div>
+<!-- end::summary[] -->
+
+<h2>최근 30일 학습량</h2>
+<p class="muted">파란색은 정답, 붉은색은 오답입니다.</p>
+<!-- tag::chart[] -->
+<div class="chart">
+    <div class="day" th:each="day : ${stats.dailyStats}"
+         th:title="|${day.studyDate}: 정답 ${day.correctCount} · 오답 ${day.wrongCount}|">
+        <div class="bar-wrong" th:if="${stats.maxDailyTotal > 0}"
+             th:style="|height: ${day.wrongCount * 120 / stats.maxDailyTotal}px|"></div>
+        <div class="bar-correct" th:if="${stats.maxDailyTotal > 0}"
+             th:style="|height: ${day.correctCount * 120 / stats.maxDailyTotal}px|"></div>
+    </div>
+</div>
+<!-- end::chart[] -->
+
+<h2>덱별 성취도</h2>
+<table class="stats">
+    <thead>
+    <tr>
+        <th>덱</th>
+        <th>판정 수</th>
+        <th>정답률</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr th:each="deckStat : ${stats.deckStats}">
+        <td th:text="${deckStat.deckName}">덱</td>
+        <td th:text="${deckStat.totalCount}">0</td>
+        <td th:text="|${deckStat.accuracyPercent}%|">0%</td>
+    </tr>
+    </tbody>
+</table>
+</body>
+</html>

@@ -1,0 +1,130 @@
+== Spring Data JDBC: 리포지토리와 애그리거트
+
+`insert into cards ...`, `select ... where id = :id`, `delete from ...`.
+5장까지 우리가 쓴 SQL의 상당수는 어느 테이블에나 똑같이 생긴 기본 CRUD였다.
+Spring Data JDBC는 이 뻔한 부분을 인터페이스 선언만으로 만들어 주면서도, JPA 같은 무거운 기계 장치(영속성 컨텍스트, 지연 로딩, 변경 감지)는 들이지 않는다.
+"ORM의 편의 중 단순한 것만, Spring JDBC의 투명함은 그대로"가 이 기술의 설계 철학이다.
+
+예제 모듈은 `examples/ch06-data-jdbc`, 의존성은 `spring-boot-starter-data-jdbc` 하나다.
+
+=== 애그리거트: 함께 저장되고 함께 지워지는 단위
+
+Spring Data JDBC의 중심 개념은 도메인 주도 설계(DDD)에서 온 *애그리거트*(aggregate)다.
+"항상 함께 저장되고 함께 지워지는 객체 묶음"으로, 묶음의 대표를 애그리거트 루트라 한다.
+덱과 카드로 말하면, 카드가 덱을 통해서만 만들어지고 지워지는 모델에서는 덱이 루트다.
+
+[source,java,indent=0]
+----
+include::{examples}/ch06-data-jdbc/src/main/java/flashcard/datajdbc/Deck.java[tag=class]
+----
+
+[source,java,indent=0]
+----
+include::{examples}/ch06-data-jdbc/src/main/java/flashcard/datajdbc/Card.java[tag=class]
+----
+
+`@MappedCollection`이 "덱 하나에 카드 여러 장"을 표현한다.
+`cards` 테이블의 `deck_id` 컬럼이 소속을, `card_index` 컬럼이 리스트 안의 순서를 담는다.
+카드 쪽에는 이 두 컬럼에 해당하는 필드가 아예 없다는 점이 인상적이다.
+소속과 순서는 애그리거트 구조가 이미 표현하고 있으므로 프레임워크가 대신 관리한다.
+
+스키마에는 순서 컬럼과, 낙관적 잠금(뒤에서 설명)을 위한 `version` 컬럼이 추가된다.
+
+[source,sql,indent=0]
+----
+include::{examples}/ch06-data-jdbc/src/main/resources/schema.sql[tag=schema]
+----
+
+=== 리포지토리: 선언이 곧 구현
+
+리포지토리는 인터페이스 선언만으로 완성된다.
+
+[source,java,indent=0]
+----
+include::{examples}/ch06-data-jdbc/src/main/java/flashcard/datajdbc/DeckRepository.java[tag=class]
+----
+
+`ListCrudRepository`를 상속하는 것만으로 `save`, `findById`, `findAll`, `deleteById` 등이 생긴다.
+여기에 세 가지 방식의 조회가 공존한다.
+
+1. *상속받은 CRUD*: 구현 없이 제공.
+2. *메서드 이름 파생 쿼리*: `findByNameContaining`처럼 이름 규칙으로 쿼리를 생성.
+3. *`@Query`*: 복잡한 조회는 SQL을 직접. 2장에서 배운 이름 있는 파라미터가 그대로 쓰인다.
+
+`findAllSummaries`처럼 엔티티가 아닌 record(`DeckSummary`)를 돌려주는 조회 전용 쿼리도 `@Query`로 자연스럽게 처리된다.
+"기본은 자동, 복잡한 것은 SQL"이라는 균형이 Spring Data JDBC를 쓰는 감각이다.
+
+=== 애그리거트 저장의 의미
+
+`save` 한 번이 애그리거트 전체에 적용된다.
+
+[source,java,indent=0]
+----
+include::{examples}/ch06-data-jdbc/src/test/java/flashcard/datajdbc/DeckRepositoryTest.java[tag=aggregate-save]
+----
+
+카드를 리스트에서 빼고 저장하면 그 카드의 행이 지워진다.
+JPA처럼 "변경을 감지"하는 것이 아니라, 저장 시점의 애그리거트 상태를 DB에 그대로 반영하는 단순한 규칙이다.
+
+[source,java,indent=0]
+----
+include::{examples}/ch06-data-jdbc/src/test/java/flashcard/datajdbc/DeckRepositoryTest.java[tag=aggregate-remove]
+----
+
+이 단순함은 경계를 요구한다.
+애그리거트가 크면 저장할 때마다 통째로 다시 쓰는 비용이 커지므로, *애그리거트는 작게* 유지하고 애그리거트끼리는 객체 참조 대신 id로 참조하는 것이 이 기술의 모델링 원칙이다.
+카드가 수백 장인 덱에서 카드 한 장을 고치는 작업이 잦다면, 7장에서처럼 카드를 독립 애그리거트로 두는 편이 낫다.
+
+=== 낙관적 잠금: @Version
+
+두 요청이 같은 덱을 동시에 수정하면 늦게 저장한 쪽이 먼저 저장한 쪽을 덮어쓴다.
+`@Version` 필드를 두면, 저장할 때마다 버전이 올라가고 낡은 버전으로 저장하려는 시도는 예외로 거부된다.
+
+[source,java,indent=0]
+----
+include::{examples}/ch06-data-jdbc/src/test/java/flashcard/datajdbc/DeckRepositoryTest.java[tag=optimistic-lock]
+----
+
+=== 함정: 식별자 인용과 H2
+
+이 장의 엔티티에서 눈에 걸리는 부분이 있었을 것이다.
+
+[source,java]
+----
+@Table("DECKS")
+...
+@MappedCollection(idColumn = "DECK_ID", keyColumn = "CARD_INDEX")
+----
+
+왜 대문자일까?
+Spring Data JDBC는 SQL을 생성할 때 식별자를 따옴표로 감싼다(quoting).
+따옴표로 감싼 식별자는 대소문자를 구별하는데, H2는 따옴표 없이 만든 테이블·컬럼 이름을 *대문자*로 저장한다.
+즉 `create table decks ...`로 만든 테이블의 실제 이름은 `DECKS`이고, 애너테이션에 `"decks"`라고 적으면 `"decks"`라는 소문자 이름을 찾다가 실패한다.
+
+클래스·필드 이름에서 *유도되는* 이름(`Deck` → `DECK`, `cardCount` → `CARD_COUNT`)은 프레임워크가 DB 관례에 맞춰 대문자로 만들어 주므로 문제가 없다.
+문제는 애너테이션에 *직접 적은* 이름뿐이다. 그래서 직접 적을 때는 H2가 저장하는 형태인 대문자로 맞췄다.
+PostgreSQL은 반대로 소문자로 저장하므로, DB를 옮길 때 이 지점이 흔한 이식성 함정이 된다.
+
+=== 테스트: @DataJdbcTest
+
+5장의 `@JdbcTest`처럼, Spring Data JDBC에는 리포지토리만 띄우는 슬라이스 테스트가 있다.
+
+[source,java,indent=0]
+----
+include::{examples}/ch06-data-jdbc/src/test/java/flashcard/datajdbc/DeckRepositoryTest.java[tag=setup]
+----
+
+한 가지 주의점.
+슬라이스 테스트도 `@SpringBootApplication` 클래스를 설정의 뿌리로 쓰며 `CommandLineRunner` 빈까지 실행한다.
+애플리케이션 클래스에 데모용 러너를 두면 테스트마다 데모 데이터가 들어가는 사고가 난다.
+이 모듈의 실행 예제(`DataJdbcQuickTour`)가 러너 대신 `main` 안에서 컨텍스트를 직접 다루는 이유다.
+
+=== 정리
+
+기본 CRUD는 선언으로, 복잡한 조회는 여전히 SQL로.
+Spring Data JDBC는 2장에서 익힌 Spring JDBC 위에 얇게 얹히는 기술이라, 아래층의 지식이 그대로 통한다.
+
+다만 실무 규모의 앱을 만들다 보면 아쉬움이 생긴다.
+`@Query`에 적는 SQL이 늘어날수록 컬럼 목록 나열이 반복되고, `save` 하나로 insert와 update를 겸하는 설계는 "새 객체인지 아닌지"를 프레임워크가 판단하게 만든다.
+이 아쉬움을 노린 확장 라이브러리가 다음 장의 Spring JDBC Plus다.
+그리고 다음 장에서 드디어 Flashcard를 요구사항 전부와 함께 완성한다.

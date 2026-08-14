@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>카드 수정 - Flashcard</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<h1><a href="/">Flashcard</a></h1>
+
+<h2 th:text="|카드 수정 (${deck.name})|">카드 수정</h2>
+
+<form th:action="@{/decks/{deckId}/cards/{cardId}/edit(deckId=${deck.id}, cardId=${card.id})}"
+      method="post">
+    <p><input type="text" name="text" th:value="${card.text}" required></p>
+    <p><input type="text" name="meaning" th:value="${card.meaning}" required></p>
+    <p><input type="text" name="tags" th:value="${tags}" placeholder="태그 (쉼표로 구분)"></p>
+    <button type="submit" class="primary">저장</button>
+    <a class="button" th:href="@{/decks/{id}(id=${deck.id})}">취소</a>
+</form>
+</body>
+</html>

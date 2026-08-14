@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>Flashcard</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<h1><a href="/">Flashcard</a></h1>
+<nav><a href="/">홈</a> <a href="/stats">통계</a></nav>
+
+<p th:if="${message}" class="notice" th:text="${message}">알림</p>
+<p th:if="${error}" class="error" th:text="${error}">오류</p>
+
+<!-- tag::today[] -->
+<div class="tile-row">
+    <div class="tile">
+        <div>오늘 복습</div>
+        <div class="count" th:text="|${todayCount}장|">0장</div>
+        <form th:if="${todayCount > 0}" action="/study/today" method="post">
+            <select name="direction">
+                <option th:each="dir : ${directions}" th:value="${dir}"
+                        th:text="${dir.label}">방향</option>
+            </select>
+            <button type="submit" class="primary">복습 시작</button>
+        </form>
+        <p th:if="${todayCount == 0}" class="muted">오늘 복습할 카드가 없습니다.</p>
+    </div>
+</div>
+<!-- end::today[] -->
+
+<h2>추천 복습</h2>
+<!-- tag::preset[] -->
+<div class="tile-row">
+    <div class="tile">
+        <div>자주 틀린 카드</div>
+        <div class="count" th:text="|${oftenWrongCount}장|">0장</div>
+        <form th:if="${oftenWrongCount > 0}" action="/study/preset/OFTEN_WRONG" method="post">
+            <select name="direction">
+                <option th:each="dir : ${directions}" th:value="${dir}"
+                        th:text="${dir.label}">방향</option>
+            </select>
+            <button type="submit">학습</button>
+        </form>
+    </div>
+    <div class="tile">
+        <div>오래 안 본 카드</div>
+        <div class="count" th:text="|${staleCount}장|">0장</div>
+        <form th:if="${staleCount > 0}" action="/study/preset/STALE" method="post">
+            <select name="direction">
+                <option th:each="dir : ${directions}" th:value="${dir}"
+                        th:text="${dir.label}">방향</option>
+            </select>
+            <button type="submit">학습</button>
+        </form>
+    </div>
+</div>
+<!-- end::preset[] -->
+
+<h2>내 덱</h2>
+<p th:if="${decks.isEmpty()}" class="muted">아직 덱이 없습니다. 첫 덱을 만들어 보세요.</p>
+<ul class="plain">
+    <li th:each="deck : ${decks}">
+        <a th:href="@{/decks/{id}(id=${deck.id})}" th:text="${deck.name}">덱 이름</a>
+        <span class="muted" th:text="|카드 ${deck.cardCount}장 · 오늘 복습 ${deck.dueCount}장|">요약</span>
+    </li>
+</ul>
+
+<form action="/decks" method="post">
+    <input type="text" name="name" placeholder="새 덱 이름" required>
+    <button type="submit" class="primary">덱 만들기</button>
+</form>
+
+<h2>스마트 덱</h2>
+<p class="muted">카드를 담아 두는 대신 조건으로 그때그때 골라 오는 덱입니다.</p>
+<ul class="plain">
+    <li th:each="smartDeck : ${smartDecks}">
+        <span>
+            <strong th:text="${smartDeck.name}">이름</strong>
+            <span class="muted" th:text="|${smartDeck.conditionType.label}|">조건</span>
+            <span class="muted" th:if="${!#strings.isEmpty(smartDeck.param)}"
+                  th:text="|(${smartDeck.param})|">파라미터</span>
+        </span>
+        <span>
+            <form class="inline" th:action="@{/study/smart/{id}(id=${smartDeck.id})}" method="post">
+                <select name="direction">
+                    <option th:each="dir : ${directions}" th:value="${dir}"
+                            th:text="${dir.label}">방향</option>
+                </select>
+                <button type="submit">학습</button>
+            </form>
+            <form class="inline" th:action="@{/smart-decks/{id}/delete(id=${smartDeck.id})}" method="post">
+                <button type="submit">삭제</button>
+            </form>
+        </span>
+    </li>
+</ul>
+
+<!-- tag::smart-form[] -->
+<form action="/smart-decks" method="post">
+    <input type="text" name="name" placeholder="스마트 덱 이름" required>
+    <select name="condition">
+        <option value="OFTEN_WRONG">자주 틀린 카드</option>
+        <option value="STALE">오래 안 본 카드</option>
+        <option value="TAGGED">특정 태그가 붙은 카드</option>
+        <option value="RECENT">최근에 추가한 카드</option>
+    </select>
+    <input type="text" name="param" placeholder="태그 이름 또는 일수 (선택)">
+    <button type="submit">스마트 덱 만들기</button>
+</form>
+<!-- end::smart-form[] -->
+</body>
+</html>

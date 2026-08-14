@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>라운드 종료 - Flashcard</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<h1><a href="/">Flashcard</a></h1>
+
+<div class="card-box">
+    <p th:text="|${study.round}라운드 종료!|">라운드 종료</p>
+    <p class="muted" th:text="|틀린 카드 ${study.wrongCount}장이 남았습니다.|">틀린 카드</p>
+</div>
+
+<form action="/study/retry" method="post" class="inline">
+    <button type="submit" class="primary">틀린 카드만 다시</button>
+</form>
+<form action="/study/finish" method="post" class="inline">
+    <button type="submit">오늘은 여기까지</button>
+</form>
+</body>
+</html>

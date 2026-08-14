@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>학습 완료 - Flashcard</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<h1><a href="/">Flashcard</a></h1>
+
+<div class="card-box">
+    <p th:text="|${study.title} 학습을 마쳤습니다! 🎉|">학습 완료</p>
+    <p class="muted" th:if="${study.retryRound}"
+       th:text="|${study.round}라운드 만에 전부 맞혔습니다.|">라운드</p>
+</div>
+
+<form action="/study/finish" method="post" class="inline">
+    <button type="submit" class="primary">홈으로</button>
+</form>
+<a class="button" href="/stats">통계 보기</a>
+</body>
+</html>
