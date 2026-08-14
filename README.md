@@ -1,7 +1,12 @@
 # Spring JDBC로 만드는 암기 카드 앱
 
+[![Test examples](https://github.com/benelog/spring-jdbc-book/actions/workflows/test-examples.yml/badge.svg)](https://github.com/benelog/spring-jdbc-book/actions/workflows/test-examples.yml)
+[![Publish book](https://github.com/benelog/spring-jdbc-book/actions/workflows/publish-book.yml/badge.svg)](https://github.com/benelog/spring-jdbc-book/actions/workflows/publish-book.yml)
+
 JDBC 표준부터 Spring JDBC, 트랜잭션, Spring Boot, Spring Data JDBC, [Spring JDBC Plus](https://github.com/naver/spring-jdbc-plus)까지,
 데이터 액세스 기술을 한 층씩 쌓아 올리며 암기 카드 앱 **Flashcard**를 완성하는 책의 원고와 예제 코드 저장소입니다.
+
+**📖 책 읽기: <https://benelog.github.io/spring-jdbc-book/>** (main 브랜치 기준으로 자동 배포)
 
 ## 구성
 
@@ -54,3 +59,8 @@ cd examples
 cd book
 ./build.sh          # build/book.html 생성
 ```
+
+## CI
+
+- [Test examples](https://github.com/benelog/spring-jdbc-book/actions/workflows/test-examples.yml): `examples/` 변경 시 JDK 25 + Gradle로 전체 테스트를 실행합니다. Testcontainers(PostgreSQL) 테스트도 포함됩니다.
+- [Publish book](https://github.com/benelog/spring-jdbc-book/actions/workflows/publish-book.yml): main에 push될 때 원고를 렌더링해 [GitHub Pages](https://benelog.github.io/spring-jdbc-book/)로 배포합니다. 렌더링 경고가 있으면 배포 전에 실패합니다.
