@@ -132,6 +132,7 @@ include::{examples}/ch07-jdbc-plus/src/main/java/flashcard/plus/repository/CardR
 
 엔티티가 아닌 화면용 record는 5장처럼 ``RowMapper``를 지정해 받는다.
 덱 요약(카드 수 + 오늘 복습 수)이 그 예다.
+6장에서 정리한 "엔티티를 바깥 레이어까지 내보내지 않는다"는 원칙이 완성판에서도 그대로 이어지는 셈이다.
 
 [source,java,indent=0]
 ----
