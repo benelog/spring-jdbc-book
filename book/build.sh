@@ -3,4 +3,6 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 asciidoctor -o build/book.html book.adoc
+mkdir -p build/images
+cp -r images/. build/images/
 echo "생성됨: $(pwd)/build/book.html"

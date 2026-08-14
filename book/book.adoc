@@ -1,4 +1,4 @@
-= Spring JDBC로 만드는 암기 카드 앱
+= 바닥부터 다져 올리는 Spring Data JDBC: JDBC부터 Spring JDBC Plus까지
 :doctype: book
 :lang: ko
 :toc: left
@@ -8,7 +8,10 @@
 :icons: font
 :source-highlighter: highlight.js
 :examples: ../examples
+:imagesdir: images
 :experimental:
+
+include::preface.adoc[]
 
 include::ch00-intro.adoc[]
 

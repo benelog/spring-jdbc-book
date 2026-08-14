@@ -35,6 +35,9 @@ include::{examples}/ch06-data-jdbc/src/main/java/flashcard/datajdbc/Card.java[ta
 include::{examples}/ch06-data-jdbc/src/main/resources/schema.sql[tag=schema]
 ----
 
+.6장 스키마 ERD: 순서(card_index)와 낙관적 잠금(version) 컬럼이 추가됐다
+image::ch06-erd.png[6장 스키마 ERD,640]
+
 === 리포지토리: 선언이 곧 구현
 
 리포지토리는 인터페이스 선언만으로 완성된다.

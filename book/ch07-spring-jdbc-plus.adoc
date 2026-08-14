@@ -47,6 +47,9 @@ Plus의 리포지토리 자동 설정은 표준 Spring Data JDBC 리포지토리
 include::{examples}/ch07-jdbc-plus/src/main/resources/schema.sql[tag=schema]
 ----
 
+.완성판 스키마 ERD: 카드를 중심으로 복습 상태·기록·태그가 연결되고, smart_deck은 독립 테이블이다
+image::ch07-erd.png[완성판 스키마 ERD,880]
+
 설계에서 눈여겨볼 결정 두 가지.
 
 *카드는 독립 애그리거트다.*
