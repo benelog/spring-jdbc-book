@@ -1,5 +1,7 @@
 package flashcard.template;
 
+import java.util.List;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -14,6 +16,7 @@ class DeckRepositoryTest {
 
     EmbeddedDatabase dataSource;
     DeckRepository deckRepository;
+    CardRepository cardRepository;
 
     @BeforeEach
     void setUp() {
@@ -23,6 +26,7 @@ class DeckRepositoryTest {
                 .addScript("schema.sql")
                 .build();
         deckRepository = new DeckRepository(dataSource);
+        cardRepository = new CardRepository(dataSource);
     }
 
     @AfterEach
@@ -31,22 +35,44 @@ class DeckRepositoryTest {
     }
 
     @Test
-    @DisplayName("덱을 저장하고 조회한다")
-    void insertAndFind() {
-        long id = deckRepository.insert("영어 단어장");
+    @DisplayName("이름이 같은 덱이 있으면 기존 덱의 id를 돌려준다")
+    void findOrCreate() {
+        long first = deckRepository.findOrCreate("영어 단어장");
+        long second = deckRepository.findOrCreate("영어 단어장");
 
+        assertThat(second).isEqualTo(first);
         assertThat(deckRepository.countAll()).isEqualTo(1);
-        assertThat(deckRepository.findAll().getFirst().name()).isEqualTo("영어 단어장");
-        assertThat(deckRepository.findAll().getFirst().id()).isEqualTo(id);
     }
 
     @Test
-    @DisplayName("덱 이름을 바꾼다")
-    void rename() {
-        long id = deckRepository.insert("영어 단어장");
+    @DisplayName("덱과 카드를 쿼리 한 번으로 조회한다")
+    void findWithCards() {
+        long deckId = deckRepository.insert("영어 단어장");
+        cardRepository.insertAll(List.of(
+                Card.of(deckId, "resilient", "회복력 있는"),
+                Card.of(deckId, "deliberate", "의도적인")
+        ));
 
-        deckRepository.rename(id, "TOEIC 단어장");
+        DeckWithCards deck = deckRepository.findWithCards(deckId).orElseThrow();
 
-        assertThat(deckRepository.findAll().getFirst().name()).isEqualTo("TOEIC 단어장");
+        assertThat(deck.name()).isEqualTo("영어 단어장");
+        assertThat(deck.cards()).hasSize(2);
+        assertThat(deck.cards().getFirst().text()).isEqualTo("resilient");
+    }
+
+    @Test
+    @DisplayName("카드가 없는 덱은 빈 목록으로 조립된다")
+    void findWithCardsEmpty() {
+        long deckId = deckRepository.insert("빈 덱");
+
+        DeckWithCards deck = deckRepository.findWithCards(deckId).orElseThrow();
+
+        assertThat(deck.cards()).isEmpty();
+    }
+
+    @Test
+    @DisplayName("없는 덱은 빈 Optional을 돌려준다")
+    void findWithCardsMissing() {
+        assertThat(deckRepository.findWithCards(999L)).isEmpty();
     }
 }

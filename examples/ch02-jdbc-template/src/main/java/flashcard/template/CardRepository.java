@@ -1,14 +1,17 @@
 package flashcard.template;
 
+import java.io.PrintWriter;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 import javax.sql.DataSource;
 
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.DataClassRowMapper;
+import org.springframework.jdbc.core.RowCallbackHandler;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.BeanPropertySqlParameterSource;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
@@ -126,6 +129,33 @@ public class CardRepository {
         return jdbc.batchUpdate(sql, batchParams);
     }
     // end::batch[]
+
+    // tag::stream[]
+    /** 결과 전체를 List로 모으지 않고 한 행씩 흘려보낸다. 호출하는 쪽이 반드시 닫아야 한다. */
+    public Stream<Card> streamByDeckId(long deckId) {
+        String sql = """
+                select id, deck_id, text, meaning
+                from cards
+                where deck_id = :deckId
+                order by id
+                """;
+        return jdbc.queryForStream(sql, Map.of("deckId", deckId), cardMapper);
+    }
+    // end::stream[]
+
+    // tag::row-callback[]
+    /** 카드가 아무리 많아도 List로 모으지 않고 한 행씩 CSV로 내려 쓴다. */
+    public void exportCsv(long deckId, PrintWriter out) {
+        String sql = """
+                select text, meaning
+                from cards
+                where deck_id = :deckId
+                order by id
+                """;
+        jdbc.query(sql, Map.of("deckId", deckId), (RowCallbackHandler) rs ->
+                out.println(rs.getString("text") + "," + rs.getString("meaning")));
+    }
+    // end::row-callback[]
 
     // tag::dynamic-sql[]
     /** 조건이 주어졌을 때만 where 절을 붙이는 동적 검색. */

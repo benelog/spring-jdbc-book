@@ -1,6 +1,9 @@
 package flashcard.template;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.List;
+import java.util.stream.Stream;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -98,6 +101,39 @@ class CardRepositoryTest {
         cardRepository.update(new Card(id, deckId, "resilient", "회복력 있는"));
 
         assertThat(cardRepository.findById(id).orElseThrow().meaning()).isEqualTo("회복력 있는");
+    }
+
+    // tag::stream[]
+    @Test
+    @DisplayName("스트림 조회는 try-with-resources로 닫는다")
+    void streamByDeckId() {
+        cardRepository.insertAll(List.of(
+                Card.of(deckId, "resilient", "회복력 있는"),
+                Card.of(deckId, "deliberate", "의도적인")
+        ));
+
+        try (Stream<Card> cards = cardRepository.streamByDeckId(deckId)) {
+            List<String> texts = cards.map(Card::text).toList();
+            assertThat(texts).containsExactly("resilient", "deliberate");
+        }
+    }
+    // end::stream[]
+
+    @Test
+    @DisplayName("카드 목록을 CSV로 내려 쓴다")
+    void exportCsv() {
+        cardRepository.insertAll(List.of(
+                Card.of(deckId, "resilient", "회복력 있는"),
+                Card.of(deckId, "deliberate", "의도적인")
+        ));
+        StringWriter buffer = new StringWriter();
+
+        cardRepository.exportCsv(deckId, new PrintWriter(buffer));
+
+        assertThat(buffer.toString().lines()).containsExactly(
+                "resilient,회복력 있는",
+                "deliberate,의도적인"
+        );
     }
 
     // tag::search[]
