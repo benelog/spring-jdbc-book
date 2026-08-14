@@ -48,12 +48,14 @@ class DeckServiceTest {
     @Autowired
     DataSource dataSource;
 
+    // tag::cleanup[]
     @AfterEach
     void cleanUp() {
         JdbcTemplate jdbc = new JdbcTemplate(dataSource);
         jdbc.update("delete from cards");
         jdbc.update("delete from decks");
     }
+    // end::cleanup[]
 
     @Test
     @DisplayName("프록시가 주입된다")

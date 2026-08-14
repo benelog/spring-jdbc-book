@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.jdbc.test.autoconfigure.JdbcTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.test.context.jdbc.Sql;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -44,6 +45,20 @@ class DeckRepositoryTest {
 
         assertThat(deckRepository.findAllSummaries().getFirst().cardCount()).isZero();
     }
+
+    // tag::sql[]
+    @Test
+    @DisplayName("@Sql로 준비한 데이터를 조회한다")
+    @Sql(statements = {
+            "insert into decks (id, name) values (10, '영어 단어장')",
+            "insert into cards (deck_id, text, meaning) values (10, 'resilient', '회복력 있는')"
+    })
+    void summariesFromSqlData() {
+        List<DeckSummary> summaries = deckRepository.findAllSummaries();
+
+        assertThat(summaries.getFirst().cardCount()).isEqualTo(1);
+    }
+    // end::sql[]
 
     @Test
     @DisplayName("덱을 지우면 카드도 함께 지워진다")

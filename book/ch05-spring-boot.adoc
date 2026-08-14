@@ -134,6 +134,18 @@ include::{examples}/ch05-boot-jdbc/src/test/java/flashcard/boot/DeckRepositoryTe
 ----
 
 ``@JdbcTest``는 각 테스트를 트랜잭션으로 감싸고 끝나면 롤백하므로, 테스트끼리 데이터가 섞이지 않는다.
+4장에서 소개한 테스트 트랜잭션 롤백 기법을 슬라이스가 대신 적용해 주는 것이다.
+저장소는 트랜잭션을 스스로 관리하지 않으므로, 4장의 서비스 테스트와 달리 자동 롤백과 충돌할 일도 없다.
+
+테스트에 필요한 데이터를 저장소 호출 대신 SQL로 준비하고 싶다면 ``spring-test``의 ``@Sql``을 쓴다.
+지정한 문장이 테스트 메서드 직전에 같은 트랜잭션 안에서 실행되므로, 이 데이터도 테스트가 끝나면 함께 롤백된다.
+
+[source,java,indent=0]
+----
+include::{examples}/ch05-boot-jdbc/src/test/java/flashcard/boot/DeckRepositoryTest.java[tag=sql]
+----
+
+문장이 많아지면 ``@Sql(scripts = "/deck-cards.sql")``처럼 파일로 빼는 편이 낫지만, 이 정도 분량은 코드에 직접 두면 준비한 데이터와 검증 조건이 한 화면에 보인다는 장점이 있다.
 
 웹 계층까지 포함한 흐름은 ``@SpringBootTest``와 ``MockMvc``로 확인한다.
 운영 설정의 파일 DB 대신 메모리 DB를 쓰도록 프로퍼티만 덮어쓴다.
@@ -147,6 +159,19 @@ include::{examples}/ch05-boot-jdbc/src/test/java/flashcard/boot/FlashcardWebTest
 ----
 include::{examples}/ch05-boot-jdbc/src/test/java/flashcard/boot/FlashcardWebTest.java[tag=flow]
 ----
+
+==== 컨텍스트 캐싱과 프로퍼티
+
+``@SpringBootTest``는 전체 컨텍스트를 띄우므로, 4장에서 설명한 컨텍스트 캐싱의 덕을 가장 크게 보는 쪽이자 캐시를 가장 쉽게 흘리는 쪽이기도 하다.
+캐시 키에는 ``properties``로 덮어쓴 값도 들어간다.
+웹 테스트 클래스를 하나 더 만들면서 datasource URL만 ``jdbc:h2:mem:another``로 바꿔 적으면, 구성이 다르다고 판단되어 전체 테스트를 돌릴 때 무거운 컨텍스트가 한 번 더 뜬다.
+이런 클래스가 늘수록 전체 테스트 시간이 컨텍스트 로딩으로 채워지므로, 프로퍼티 조합은 통째로 공유해야 한다.
+간단하게는 설정 문자열을 상수로 뽑아 함께 쓰고, 클래스가 많아지면 ``@SpringBootTest``와 프로퍼티를 묶은 메타 애너테이션을 만들어 붙인다.
+
+컨텍스트를 공유하면 그 안의 DB 상태도 공유된다는 점은 기억해 두자.
+``@SpringBootTest``는 ``@JdbcTest``와 달리 테스트를 트랜잭션으로 감싸 주지 않는다.
+그래서 위의 웹 테스트는 "덱을 만들면 덱 상세로 이동한다"처럼 누적된 데이터에 흔들리지 않는 조건만 검증했다.
+행 개수를 세는 식의 검증이 필요하다면 테스트가 만든 데이터를 직접 정리하거나, 테스트에 ``@Transactional``을 직접 붙여 롤백되게 해야 한다.
 
 === 정리
 
