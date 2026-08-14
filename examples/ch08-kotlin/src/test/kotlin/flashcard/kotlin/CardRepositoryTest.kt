@@ -1,10 +1,10 @@
 package flashcard.kotlin
 
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertNull
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.DisplayName
+import org.junit.jupiter.api.Test
 import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.jdbc.datasource.embedded.EmbeddedDatabase
 import org.springframework.jdbc.datasource.embedded.EmbeddedDatabaseBuilder
@@ -37,35 +37,39 @@ class CardRepositoryTest {
     }
 
     @Test
-    fun `카드를 저장하고 조회한다`() {
+    @DisplayName("카드를 저장하고 조회한다")
+    fun insertAndFind() {
         val saved = cards.insert(Card(deckId = deckId, text = "resilient", meaning = "회복력 있는"))
 
         val found = cards.findById(saved.id!!)
 
-        assertEquals("resilient", found?.text)
-        assertEquals(saved, found)   // data class는 값으로 비교된다
+        assertThat(found?.text).isEqualTo("resilient")
+        assertThat(found).isEqualTo(saved)   // data class는 값으로 비교된다
     }
 
     @Test
-    fun `없는 카드는 null을 돌려준다`() {
-        assertNull(cards.findById(999))
+    @DisplayName("없는 카드는 null을 돌려준다")
+    fun findMissing() {
+        assertThat(cards.findById(999)).isNull()
     }
 
     @Test
-    fun `키워드로 검색한다`() {
+    @DisplayName("키워드로 검색한다")
+    fun search() {
         cards.insert(Card(deckId = deckId, text = "resilient", meaning = "회복력 있는"))
         cards.insert(Card(deckId = deckId, text = "deliberate", meaning = "의도적인"))
 
-        assertEquals(1, cards.search("회복").size)
-        assertEquals(2, cards.search(null).size)
+        assertThat(cards.search("회복")).hasSize(1)
+        assertThat(cards.search(null)).hasSize(2)
     }
 
     @Test
-    fun `원문만 뽑아 온다`() {
+    @DisplayName("원문만 뽑아 온다")
+    fun findTexts() {
         cards.insert(Card(deckId = deckId, text = "resilient", meaning = "회복력 있는"))
         cards.insert(Card(deckId = deckId, text = "deliberate", meaning = "의도적인"))
 
-        assertEquals(listOf("resilient", "deliberate"), cards.findTexts(deckId))
+        assertThat(cards.findTexts(deckId)).containsExactly("resilient", "deliberate")
     }
 }
 // end::class[]

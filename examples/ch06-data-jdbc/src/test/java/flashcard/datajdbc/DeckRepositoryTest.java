@@ -2,14 +2,14 @@ package flashcard.datajdbc;
 
 import java.util.List;
 
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jdbc.test.autoconfigure.DataJdbcTest;
 import org.springframework.dao.OptimisticLockingFailureException;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 // tag::setup[]
 @DataJdbcTest
@@ -21,7 +21,8 @@ class DeckRepositoryTest {
 
     // tag::aggregate-save[]
     @Test
-    void 덱을_저장하면_카드도_함께_저장된다() {
+    @DisplayName("덱을 저장하면 카드도 함께 저장된다")
+    void saveAggregate() {
         Deck deck = new Deck("영어 단어장");
         deck.addCard("resilient", "회복력 있는");
         deck.addCard("deliberate", "의도적인");
@@ -29,14 +30,15 @@ class DeckRepositoryTest {
         Deck saved = deckRepository.save(deck);
 
         Deck found = deckRepository.findById(saved.getId()).orElseThrow();
-        assertEquals(2, found.getCards().size());
-        assertEquals("resilient", found.getCards().getFirst().text());
+        assertThat(found.getCards()).hasSize(2);
+        assertThat(found.getCards().getFirst().text()).isEqualTo("resilient");
     }
     // end::aggregate-save[]
 
     // tag::aggregate-remove[]
     @Test
-    void 카드를_빼고_저장하면_카드_행도_지워진다() {
+    @DisplayName("카드를 빼고 저장하면 카드 행도 지워진다")
+    void removeCardOnSave() {
         Deck deck = new Deck("영어 단어장");
         deck.addCard("resilient", "회복력 있는");
         deck.addCard("deliberate", "의도적인");
@@ -47,47 +49,51 @@ class DeckRepositoryTest {
         deckRepository.save(saved);
 
         Deck found = deckRepository.findById(saved.getId()).orElseThrow();
-        assertEquals(1, found.getCards().size());
-        assertEquals(1, deckRepository.countCards(saved.getId()));
+        assertThat(found.getCards()).hasSize(1);
+        assertThat(deckRepository.countCards(saved.getId())).isEqualTo(1);
     }
     // end::aggregate-remove[]
 
     @Test
-    void 덱을_지우면_카드도_함께_지워진다() {
+    @DisplayName("덱을 지우면 카드도 함께 지워진다")
+    void deleteCascades() {
         Deck deck = new Deck("영어 단어장");
         deck.addCard("resilient", "회복력 있는");
         Deck saved = deckRepository.save(deck);
 
         deckRepository.deleteById(saved.getId());
 
-        assertTrue(deckRepository.findById(saved.getId()).isEmpty());
+        assertThat(deckRepository.findById(saved.getId())).isEmpty();
     }
 
     @Test
-    void 이름으로_검색한다() {
+    @DisplayName("이름으로 검색한다")
+    void findByName() {
         deckRepository.save(new Deck("영어 단어장"));
         deckRepository.save(new Deck("전공 용어"));
 
         List<Deck> found = deckRepository.findByNameContaining("단어");
 
-        assertEquals(1, found.size());
+        assertThat(found).hasSize(1);
     }
 
     @Test
-    void 덱_요약을_SQL로_조회한다() {
+    @DisplayName("덱 요약을 SQL로 조회한다")
+    void findSummaries() {
         Deck deck = new Deck("영어 단어장");
         deck.addCard("resilient", "회복력 있는");
         deckRepository.save(deck);
 
         List<DeckSummary> summaries = deckRepository.findAllSummaries();
 
-        assertEquals(1, summaries.size());
-        assertEquals(1, summaries.getFirst().cardCount());
+        assertThat(summaries).hasSize(1);
+        assertThat(summaries.getFirst().cardCount()).isEqualTo(1);
     }
 
     // tag::optimistic-lock[]
     @Test
-    void 낡은_버전으로_저장하면_낙관적_잠금_예외가_난다() {
+    @DisplayName("낡은 버전으로 저장하면 낙관적 잠금 예외가 난다")
+    void optimisticLock() {
         Deck saved = deckRepository.save(new Deck("영어 단어장"));
 
         Deck copy1 = deckRepository.findById(saved.getId()).orElseThrow();
@@ -97,8 +103,8 @@ class DeckRepositoryTest {
         deckRepository.save(copy1);           // version이 올라간다
 
         copy2.rename("수능 단어장");
-        assertThrows(OptimisticLockingFailureException.class,
-                () -> deckRepository.save(copy2));  // 낡은 version → 실패
+        assertThatThrownBy(() -> deckRepository.save(copy2))  // 낡은 version → 실패
+                .isInstanceOf(OptimisticLockingFailureException.class);
     }
     // end::optimistic-lock[]
 }

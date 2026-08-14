@@ -86,10 +86,10 @@ include::{examples}/ch08-kotlin/src/main/kotlin/flashcard/kotlin/CardRepository.
 include::{examples}/ch08-kotlin/src/main/kotlin/flashcard/kotlin/CardRepository.kt[tag=lambda]
 ----
 
-=== 테스트: 백틱 이름과 kotlin.test
+=== 테스트: @DisplayName과 AssertJ
 
-Kotlin 테스트에서는 백틱으로 감싼 함수 이름에 공백을 쓸 수 있어, 우리말 테스트 이름이 한결 자연스럽다.
-data class의 값 동등성 덕분에 조회 결과를 통째로 비교하는 단언도 간단하다.
+다른 장과 마찬가지로 테스트 메서드 이름은 간결하게 두고, 자세한 설명은 `@DisplayName`에 우리말로 적는다.
+단언은 AssertJ를 쓰는데, data class의 값 동등성 덕분에 조회 결과를 통째로 비교하는 단언도 간단하다.
 
 [source,kotlin,indent=0]
 ----

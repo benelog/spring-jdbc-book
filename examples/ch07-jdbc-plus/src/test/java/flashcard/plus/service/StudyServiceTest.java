@@ -1,8 +1,10 @@
 package flashcard.plus.service;
 
 import java.time.LocalDate;
+import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -14,9 +16,7 @@ import flashcard.plus.domain.ReviewState;
 import flashcard.plus.repository.ReviewLogRepository;
 import flashcard.plus.repository.ReviewStateRepository;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest(properties = {
         "spring.datasource.url=jdbc:h2:mem:plus-study-test;DB_CLOSE_DELAY=-1"
@@ -48,7 +48,8 @@ class StudyServiceTest {
 
     // tag::first-round[]
     @Test
-    void 첫_라운드의_판정은_복습_일정에_반영된다() {
+    @DisplayName("첫 라운드의 판정은 복습 일정에 반영된다")
+    void firstRound() {
         StudySession session = studyService.startDeckSession(
                 deck.id(), StudyDirection.TEXT_TO_MEANING);
 
@@ -56,53 +57,56 @@ class StudyServiceTest {
         studyService.answer(session, false);   // card2 틀림
 
         ReviewState state1 = reviewStateRepository.findByCardId(card1.id()).orElseThrow();
-        assertEquals(1, state1.correctCount());
-        assertEquals(LocalDate.now().plusDays(1), state1.dueDate());
+        assertThat(state1.correctCount()).isEqualTo(1);
+        assertThat(state1.dueDate()).isEqualTo(LocalDate.now().plusDays(1));
 
         ReviewState state2 = reviewStateRepository.findByCardId(card2.id()).orElseThrow();
-        assertEquals(1, state2.wrongCount());
+        assertThat(state2.wrongCount()).isEqualTo(1);
 
-        assertEquals(2, reviewLogRepository.countAll());
-        assertTrue(session.isRoundFinished());
-        assertTrue(session.hasWrongCards());
+        assertThat(reviewLogRepository.countAll()).isEqualTo(2);
+        assertThat(session.isRoundFinished()).isTrue();
+        assertThat(session.hasWrongCards()).isTrue();
     }
     // end::first-round[]
 
     // tag::retry-round[]
     @Test
-    void 재도전_라운드의_판정은_복습_일정에_반영되지_않는다() {
+    @DisplayName("재도전 라운드의 판정은 복습 일정에 반영되지 않는다")
+    void retryRound() {
         StudySession session = studyService.startDeckSession(
                 deck.id(), StudyDirection.TEXT_TO_MEANING);
         studyService.answer(session, true);
         studyService.answer(session, false);
 
         session.startRetryRound();             // 틀린 card2만 남는다
-        assertEquals(1, session.getTotal());
-        assertEquals(card2.id(), session.currentCardId());
+        assertThat(session.getTotal()).isEqualTo(1);
+        assertThat(session.currentCardId()).isEqualTo(card2.id());
 
         studyService.answer(session, true);    // 재도전에서 맞혔지만
 
         ReviewState state2 = reviewStateRepository.findByCardId(card2.id()).orElseThrow();
-        assertEquals(0, state2.correctCount());  // 일정과 성적은 그대로다
-        assertEquals(1, state2.wrongCount());
+        assertThat(state2.correctCount()).isZero();  // 일정과 성적은 그대로다
+        assertThat(state2.wrongCount()).isEqualTo(1);
 
-        assertEquals(3, reviewLogRepository.countAll());  // 기록은 남는다
-        assertFalse(session.hasWrongCards());
+        assertThat(reviewLogRepository.countAll()).isEqualTo(3);  // 기록은 남는다
+        assertThat(session.hasWrongCards()).isFalse();
     }
     // end::retry-round[]
 
     @Test
-    void 모두_맞힌_뒤의_오늘_복습_큐는_비어_있다() {
+    @DisplayName("모두 맞힌 뒤의 오늘 복습 큐는 비어 있다")
+    void emptyQueueAfterAllCorrect() {
         StudySession session = studyService.startDeckSession(
                 deck.id(), StudyDirection.TEXT_TO_MEANING);
         studyService.answer(session, true);
         studyService.answer(session, true);
 
-        assertEquals(0, studyService.todayCount());  // 내일이 due
+        assertThat(studyService.todayCount()).isZero();  // 내일이 due
     }
 
     @Test
-    void CSV를_들여오면_한_트랜잭션으로_카드가_생긴다() {
+    @DisplayName("CSV를 들여오면 한 트랜잭션으로 카드가 생긴다")
+    void importCsv() {
         String csv = """
                 profound,심오한,형용사
                 recover,회복하다
@@ -110,22 +114,23 @@ class StudyServiceTest {
 
         int imported = deckService.importCsv(deck.id(), csv);
 
-        assertEquals(2, imported);
-        assertEquals(4, cardService.cardsWithTags(deck.id()).size());
-        assertEquals(java.util.List.of("형용사"),
-                cardService.cardsWithTags(deck.id()).get(2).tags());
+        assertThat(imported).isEqualTo(2);
+        assertThat(cardService.cardsWithTags(deck.id())).hasSize(4);
+        assertThat(cardService.cardsWithTags(deck.id()).get(2).tags())
+                .containsExactly("형용사");
     }
 
     @Test
-    void CSV로_내보낸_덱을_다시_들여올_수_있다() {
+    @DisplayName("CSV로 내보낸 덱을 다시 들여올 수 있다")
+    void exportAndReimport() {
         cardService.editCard(card2.id(), "deliberate", "의도적인, 신중한", "형용사");
 
         String csv = deckService.exportCsv(deck.id());
         Deck copy = deckService.createDeck("복사본");
         deckService.importCsv(copy.id(), csv);
 
-        assertEquals(2, cardService.cardsWithTags(copy.id()).size());
-        assertEquals("의도적인, 신중한",
-                cardService.cardsWithTags(copy.id()).get(1).card().meaning());
+        assertThat(cardService.cardsWithTags(copy.id())).hasSize(2);
+        assertThat(cardService.cardsWithTags(copy.id()).get(1).card().meaning())
+                .isEqualTo("의도적인, 신중한");
     }
 }

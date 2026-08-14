@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -15,7 +16,7 @@ import flashcard.plus.domain.Deck;
 import flashcard.plus.domain.ReviewState;
 import flashcard.plus.domain.Tag;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
 // tag::setup[]
 @SpringBootTest(properties = {
@@ -47,16 +48,18 @@ class CardRepositoryTest {
     }
 
     @Test
-    void 덱의_카드를_조회한다() {
+    @DisplayName("덱의 카드를 조회한다")
+    void findByDeckId() {
         newCard("resilient", "회복력 있는", now);
         newCard("deliberate", "의도적인", now);
 
-        assertEquals(2, cardRepository.findByDeckId(deckId).size());
+        assertThat(cardRepository.findByDeckId(deckId)).hasSize(2);
     }
 
     // tag::due[]
     @Test
-    void 복습_예정일이_지난_카드만_오늘_복습_큐에_들어간다() {
+    @DisplayName("복습 예정일이 지난 카드만 오늘 복습 큐에 들어간다")
+    void findDue() {
         Card dueCard = newCard("resilient", "회복력 있는", now);
         Card notDueCard = newCard("deliberate", "의도적인", now);
 
@@ -66,14 +69,15 @@ class CardRepositoryTest {
 
         List<Card> due = cardRepository.findDue(today);
 
-        assertEquals(1, due.size());
-        assertEquals("resilient", due.getFirst().text());
-        assertEquals(1, cardRepository.countDue(today));
+        assertThat(due).hasSize(1);
+        assertThat(due.getFirst().text()).isEqualTo("resilient");
+        assertThat(cardRepository.countDue(today)).isEqualTo(1);
     }
     // end::due[]
 
     @Test
-    void 오답률이_높은_카드를_골라낸다() {
+    @DisplayName("오답률이 높은 카드를 골라낸다")
+    void findOftenWrong() {
         Card oftenWrong = newCard("resilient", "회복력 있는", now);
         Card wellKnown = newCard("deliberate", "의도적인", now);
 
@@ -82,13 +86,14 @@ class CardRepositoryTest {
 
         List<Card> found = cardRepository.findOftenWrong(3, 40);
 
-        assertEquals(1, found.size());
-        assertEquals("resilient", found.getFirst().text());
-        assertEquals(1, cardRepository.countOftenWrong(3, 40));
+        assertThat(found).hasSize(1);
+        assertThat(found.getFirst().text()).isEqualTo("resilient");
+        assertThat(cardRepository.countOftenWrong(3, 40)).isEqualTo(1);
     }
 
     @Test
-    void 오래_안_본_카드를_골라낸다() {
+    @DisplayName("오래 안 본 카드를 골라낸다")
+    void findStale() {
         Card stale = newCard("resilient", "회복력 있는", now.minusDays(30));
         reviewStateRepository.insert(withLastReviewedAt(stale, now.minusDays(10)));
 
@@ -99,20 +104,22 @@ class CardRepositoryTest {
 
         List<Card> found = cardRepository.findStale(now.minusDays(7));
 
-        assertEquals(2, found.size());
-        assertEquals(2, cardRepository.countStale(now.minusDays(7)));
+        assertThat(found).hasSize(2);
+        assertThat(cardRepository.countStale(now.minusDays(7))).isEqualTo(2);
     }
 
     @Test
-    void 최근에_추가한_카드를_골라낸다() {
+    @DisplayName("최근에 추가한 카드를 골라낸다")
+    void findRecent() {
         newCard("resilient", "회복력 있는", now.minusDays(30));
         newCard("deliberate", "의도적인", now.minusDays(1));
 
-        assertEquals(1, cardRepository.findRecent(now.minusDays(7)).size());
+        assertThat(cardRepository.findRecent(now.minusDays(7))).hasSize(1);
     }
 
     @Test
-    void 태그가_붙은_카드를_골라낸다() {
+    @DisplayName("태그가 붙은 카드를 골라낸다")
+    void findByTagName() {
         Card tagged = newCard("resilient", "회복력 있는", now);
         newCard("deliberate", "의도적인", now);
 
@@ -121,8 +128,8 @@ class CardRepositoryTest {
 
         List<Card> found = cardRepository.findByTagName("형용사");
 
-        assertEquals(1, found.size());
-        assertEquals("resilient", found.getFirst().text());
+        assertThat(found).hasSize(1);
+        assertThat(found.getFirst().text()).isEqualTo("resilient");
     }
 
     ReviewState withDueDate(Card card, LocalDate dueDate) {

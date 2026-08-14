@@ -2,20 +2,21 @@ package flashcard.plus.service;
 
 import java.util.List;
 
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import flashcard.plus.domain.Card;
 import flashcard.plus.domain.CardWithTags;
 import flashcard.plus.service.CsvCodec.CsvCard;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class CsvCodecTest {
 
     @Test
-    void 원문과_뜻_태그를_읽는다() {
+    @DisplayName("원문과 뜻, 태그를 읽는다")
+    void parse() {
         String csv = """
                 resilient,회복력 있는,형용사;TOEIC
                 deliberate,의도적인
@@ -23,35 +24,37 @@ class CsvCodecTest {
 
         List<CsvCard> cards = CsvCodec.parse(csv);
 
-        assertEquals(2, cards.size());
-        assertEquals(List.of("형용사", "TOEIC"), cards.get(0).tags());
-        assertTrue(cards.get(1).tags().isEmpty());
+        assertThat(cards).hasSize(2);
+        assertThat(cards.get(0).tags()).containsExactly("형용사", "TOEIC");
+        assertThat(cards.get(1).tags()).isEmpty();
     }
 
     @Test
-    void 쉼표가_든_값은_큰따옴표로_감싼다() {
+    @DisplayName("쉼표가 든 값은 큰따옴표로 감싼다")
+    void parseQuoted() {
         String csv = "deliberate,\"의도적인, 신중한\"";
 
         List<CsvCard> cards = CsvCodec.parse(csv);
 
-        assertEquals("의도적인, 신중한", cards.getFirst().meaning());
+        assertThat(cards.getFirst().meaning()).isEqualTo("의도적인, 신중한");
     }
 
     @Test
-    void 형식이_잘못된_줄은_줄_번호와_함께_거부한다() {
+    @DisplayName("형식이 잘못된 줄은 줄 번호와 함께 거부한다")
+    void rejectMalformedLine() {
         String csv = """
                 resilient,회복력 있는
                 이_줄은_쉼표가_없다
                 """;
 
-        CsvFormatException e = assertThrows(CsvFormatException.class,
-                () -> CsvCodec.parse(csv));
-
-        assertTrue(e.getMessage().contains("2번째 줄"));
+        assertThatThrownBy(() -> CsvCodec.parse(csv))
+                .isInstanceOf(CsvFormatException.class)
+                .hasMessageContaining("2번째 줄");
     }
 
     @Test
-    void 내보낸_CSV를_다시_읽으면_같은_내용이_된다() {
+    @DisplayName("내보낸 CSV를 다시 읽으면 같은 내용이 된다")
+    void roundTrip() {
         List<CardWithTags> cards = List.of(
                 new CardWithTags(new Card(1L, 1L, "deliberate", "의도적인, 신중한", null),
                         List.of("형용사", "TOEIC")),
@@ -61,8 +64,8 @@ class CsvCodecTest {
 
         List<CsvCard> reread = CsvCodec.parse(CsvCodec.format(cards));
 
-        assertEquals("의도적인, 신중한", reread.get(0).meaning());
-        assertEquals(List.of("형용사", "TOEIC"), reread.get(0).tags());
-        assertEquals("resilient", reread.get(1).text());
+        assertThat(reread.get(0).meaning()).isEqualTo("의도적인, 신중한");
+        assertThat(reread.get(0).tags()).containsExactly("형용사", "TOEIC");
+        assertThat(reread.get(1).text()).isEqualTo("resilient");
     }
 }

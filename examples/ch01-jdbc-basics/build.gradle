@@ -8,6 +8,7 @@ dependencies {
     implementation 'com.zaxxer:HikariCP'
     runtimeOnly 'org.slf4j:slf4j-simple'
     testImplementation 'org.junit.jupiter:junit-jupiter'
+    testImplementation 'org.assertj:assertj-core'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 

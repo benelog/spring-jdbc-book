@@ -2,12 +2,13 @@ package flashcard.boot;
 
 import java.util.List;
 
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.jdbc.test.autoconfigure.JdbcTest;
 import org.springframework.context.annotation.Import;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
 // tag::jdbc-test[]
 @JdbcTest
@@ -20,7 +21,8 @@ class DeckRepositoryTest {
     CardRepository cardRepository;
 
     @Test
-    void 덱_요약에_카드_수가_함께_나온다() {
+    @DisplayName("덱 요약에 카드 수가 함께 나온다")
+    void summariesWithCardCount() {
         long deckId = deckRepository.insert("영어 단어장");
         cardRepository.insertAll(List.of(
                 Card.of(deckId, "resilient", "회복력 있는"),
@@ -29,26 +31,28 @@ class DeckRepositoryTest {
 
         List<DeckSummary> summaries = deckRepository.findAllSummaries();
 
-        assertEquals(1, summaries.size());
-        assertEquals("영어 단어장", summaries.getFirst().name());
-        assertEquals(2, summaries.getFirst().cardCount());
+        assertThat(summaries).hasSize(1);
+        assertThat(summaries.getFirst().name()).isEqualTo("영어 단어장");
+        assertThat(summaries.getFirst().cardCount()).isEqualTo(2);
     }
     // end::jdbc-test[]
 
     @Test
-    void 카드가_없는_덱은_카드_수가_0이다() {
+    @DisplayName("카드가 없는 덱은 카드 수가 0이다")
+    void emptyDeckCardCount() {
         deckRepository.insert("빈 덱");
 
-        assertEquals(0, deckRepository.findAllSummaries().getFirst().cardCount());
+        assertThat(deckRepository.findAllSummaries().getFirst().cardCount()).isZero();
     }
 
     @Test
-    void 덱을_지우면_카드도_함께_지워진다() {
+    @DisplayName("덱을 지우면 카드도 함께 지워진다")
+    void deleteCascades() {
         long deckId = deckRepository.insert("영어 단어장");
         long cardId = cardRepository.insert(Card.of(deckId, "resilient", "회복력 있는"));
 
         deckRepository.deleteById(deckId);
 
-        assertEquals(true, cardRepository.findById(cardId).isEmpty());
+        assertThat(cardRepository.findById(cardId)).isEmpty();
     }
 }

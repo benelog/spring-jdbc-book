@@ -1,5 +1,6 @@
 package flashcard.plus.web;
 
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -36,7 +37,8 @@ class FlashcardPlusWebTest {
     CardService cardService;
 
     @Test
-    void 홈_화면에_오늘_복습과_추천_복습이_보인다() throws Exception {
+    @DisplayName("홈 화면에 오늘 복습과 추천 복습이 보인다")
+    void home() throws Exception {
         mockMvc.perform(get("/"))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("오늘 복습")))
@@ -44,7 +46,8 @@ class FlashcardPlusWebTest {
     }
 
     @Test
-    void 덱을_만들면_덱_상세로_이동한다() throws Exception {
+    @DisplayName("덱을 만들면 덱 상세로 이동한다")
+    void createDeck() throws Exception {
         mockMvc.perform(post("/decks").param("name", "영어 단어장"))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrlPattern("/decks/*"));
@@ -52,7 +55,8 @@ class FlashcardPlusWebTest {
 
     // tag::study-flow[]
     @Test
-    void 카드를_뒤집고_판정하는_학습_흐름이_동작한다() throws Exception {
+    @DisplayName("카드를 뒤집고 판정하는 학습 흐름이 동작한다")
+    void studyFlow() throws Exception {
         Deck deck = deckService.createDeck("영어 단어장");
         cardService.addCard(deck.id(), "resilient", "회복력 있는", "");
         MockHttpSession httpSession = new MockHttpSession();
@@ -81,7 +85,8 @@ class FlashcardPlusWebTest {
     // end::study-flow[]
 
     @Test
-    void CSV_내보내기가_동작한다() throws Exception {
+    @DisplayName("CSV 내보내기가 동작한다")
+    void exportCsv() throws Exception {
         Deck deck = deckService.createDeck("영어 단어장");
         cardService.addCard(deck.id(), "resilient", "회복력 있는", "형용사");
 
@@ -91,7 +96,8 @@ class FlashcardPlusWebTest {
     }
 
     @Test
-    void 통계_화면이_뜬다() throws Exception {
+    @DisplayName("통계 화면이 뜬다")
+    void stats() throws Exception {
         mockMvc.perform(get("/stats"))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("연속 학습일")));
