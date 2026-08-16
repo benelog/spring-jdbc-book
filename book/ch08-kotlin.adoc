@@ -2,7 +2,7 @@
 
 마지막 장은 보너스다.
 Spring JDBC 생태계를 Kotlin 프로젝트에서 쓸 때 도움이 되는 문법과 관례를 모았다.
-Spring Framework는 Kotlin을 공식 지원하며, 이 책에서 배운 모든 층이 Kotlin에서 그대로 동작한다.
+Spring Framework는 Kotlin을 공식 지원하며, 이 책에서 배운 모든 레이어가 Kotlin에서 그대로 동작한다.
 
 예제 모듈은 ``examples/ch08-kotlin``이다.
 빌드 파일에서 두 가지만 짚고 시작하자.
@@ -13,7 +13,7 @@ include::{examples}/ch08-kotlin/build.gradle[]
 ----
 
 * `kotlin-reflect`: ``DataClassRowMapper``와 ``BeanPropertySqlParameterSource``가 Kotlin 클래스의 생성자·프로퍼티를 들여다볼 때 필요하다.
-* `org.jetbrains.kotlin.plugin.spring`: Kotlin 클래스는 기본이 ``final``이라 4장에서 배운 상속 기반 프록시를 만들 수 없다. 이 플러그인이 `@Service`, `@Transactional` 등이 붙은 클래스를 자동으로 ``open``으로 바꿔 ``@Transactional``이 정상 동작하게 한다. Kotlin + Spring 프로젝트의 사실상 필수 플러그인이다.
+* `org.jetbrains.kotlin.plugin.spring`: Kotlin 클래스는 기본이 ``final``이라 4장에서 배운 상속 기반 프록시를 만들 수 없다. 이 플러그인이 `@Service`, `@Transactional` 등이 붙은 클래스를 자동으로 ``open``으로 바꿔 ``@Transactional``이 정상 동작하게 한다. Kotlin + Spring 프로젝트라면 빼놓지 않고 쓰는 플러그인이다.
 
 === data class: record의 자리에는
 
@@ -65,7 +65,7 @@ include::{examples}/ch08-kotlin/src/main/kotlin/flashcard/kotlin/CardRepository.
 
 Kotlin에는 checked 예외가 없다.
 ``SQLException``을 던지는 Java 메서드를 호출해도 컴파일러가 try-catch나 `throws` 선언을 요구하지 않는다.
-2장에서 본 "catch 절에서 할 것이 없는데도 처리를 강요당하는" 문제를 Kotlin은 언어 차원에서 제거한 셈이다.
+2장에서 본 "catch 절에서 할 것이 없는데도 처리를 강요당하는" 문제를 Kotlin은 언어 차원에서 제거했다.
 Kotlin 공식 문서도 대규모 코드베이스에서 checked 예외가 생산성을 떨어뜨리고 오히려 예외를 삼키는 코드를 낳는다는 점을 이 설계의 근거로 든다.
 JDBC보다 뒤에 태어난 언어가 JDBC 시대의 교훈을 문법에 반영한 결과다.
 
@@ -96,7 +96,7 @@ include::{examples}/ch08-kotlin/src/main/kotlin/flashcard/kotlin/CardRepository.
 include::{examples}/ch08-kotlin/src/main/kotlin/flashcard/kotlin/CardRepository.kt[tag=operator]
 ----
 
-``RowMapper``처럼 마지막 인자가 함수형 인터페이스인 API는 후행 람다 문법과 자연스럽게 맞물린다.
+``RowMapper``처럼 마지막 인자가 함수형 인터페이스인 API는 후행 람다 문법으로 간결하게 호출할 수 있다.
 
 [source,kotlin,indent=0]
 ----
@@ -124,7 +124,7 @@ include::{examples}/ch08-kotlin/src/main/kotlin/flashcard/kotlin/CardClientRepos
 ----
 
 ``optional()``이 돌려주는 Java ``Optional``은 Kotlin 표준 라이브러리의 ``getOrNull()``로 바로 nullable 타입이 된다.
-"없으면 null"이라는 이 장의 관용구가 ``JdbcClient``에서도 그대로 유지되는 셈이다.
+"없으면 null"이라는 이 장의 관용구가 ``JdbcClient``에서도 그대로 유지된다.
 
 === 테스트: @DisplayName과 AssertJ
 
@@ -145,5 +145,5 @@ include::{examples}/ch08-kotlin/src/test/kotlin/flashcard/kotlin/CardRepositoryT
 === 다음으로
 
 JDBC 표준에서 출발해 템플릿, 트랜잭션 추상화, 자동 설정, 리포지토리, 확장 라이브러리, 그리고 다른 언어까지 올라왔다.
-기술의 층은 다 오른 셈이지만, 각 층에는 아직 소개하지 못한 방이 남아 있다.
+기술의 레이어는 다 오른 셈이지만, 각 기술에는 아직 소개하지 못한 기능이 남아 있다.
 마지막 두 장에서 Spring Data JDBC와 Spring JDBC Plus의 심화 기능을 마저 둘러보고 책을 맺는다.

@@ -33,7 +33,7 @@ include::{examples}/ch03-transaction-template/src/main/java/flashcard/tx/TxQuick
 === 커넥션 돌려쓰기 문제는 어떻게 풀리나
 
 1장에서 트랜잭션의 모든 작업이 같은 커넥션을 써야 해서 커넥션을 인자로 넘겨야 했다.
-Spring은 이 문제를 *스레드에 커넥션을 묶어 두는 방식*으로 해결한다.
+Spring은 이 문제를 **스레드에 커넥션을 묶어 두는 방식**으로 해결한다.
 
 트랜잭션이 시작되면 트랜잭션 매니저가 커넥션을 얻어 현재 스레드에 바인딩해 둔다.
 ``JdbcTemplate``을 비롯한 Spring의 데이터 액세스 코드는 커넥션이 필요할 때 ``DataSource``에서 바로 꺼내는 대신 "이 스레드에 진행 중인 트랜잭션의 커넥션이 있는가"를 먼저 확인하고, 있으면 그것을 쓴다.
@@ -128,9 +128,9 @@ DBMS에 따라 잠금으로 다른 트랜잭션을 기다리게 하거나, 직�
 잠금 대기가 늘고, 데드락이나 직렬화 실패로 트랜잭션이 통째로 실패하는 빈도도 올라간다.
 그래서 대부분의 코드는 ``DEFAULT``로 두고 DB의 기본값을 따른다.
 MySQL InnoDB의 기본값은 REPEATABLE READ, PostgreSQL·Oracle·SQL Server의 기본값은 READ COMMITTED다.
-같은 코드가 DB에 따라 다른 격리 수준으로 도는 셈이므로, 동시성이 민감한 로직이라면 지금 어느 기본값 위에 서 있는지부터 확인하자.
+같은 코드가 DB에 따라 다른 격리 수준으로 돌게 되므로, 동시성이 민감한 로직이라면 지금 어느 기본값 위에 서 있는지부터 확인하자.
 
-격리 수준은 무엇이 보이는가뿐 아니라 *무엇이 잠기는가*에도 영향을 준다.
+격리 수준은 무엇이 보이는가뿐 아니라 **무엇이 잠기는가**에도 영향을 준다.
 예를 들어 InnoDB의 REPEATABLE READ에서 UPDATE나 DELETE 구문이 적합한 인덱스 없이 실행되면, 실제로 변경되지 않을 행까지 스캔 과정에서 만난 모든 행과 행 사이(gap)가 잠겨 다른 사용자의 INSERT까지 막는다.footnote:[MySQL 레퍼런스 매뉴얼의 'Locks Set by Different SQL Statements in InnoDB' 항목에 설명되어 있다. https://dev.mysql.com/doc/refman/8.4/en/innodb-locks-set.html[]]
 READ COMMITTED에서는 잠기는 범위가 실제 변경 대상 행으로 줄어든다.
 격리 수준을 조정하기 전에 WHERE 절이 인덱스를 타는지부터 챙겨야 하는 이유다.

@@ -5,7 +5,7 @@ JDBC(Java Database Connectivity)다.
 JPA를 쓰든 MyBatis를 쓰든, 이 책에서 다룰 Spring JDBC와 Spring Data JDBC를 쓰든, 맨 밑바닥에서 SQL을 나르는 것은 언제나 JDBC다.
 그래서 첫 장은 JDBC 표준 API 그 자체에서 출발한다.
 
-JDBC는 구현체가 아니라 *인터페이스의 묶음*이다.
+JDBC는 구현체가 아니라 **인터페이스의 묶음**이다.
 `java.sql` 패키지의 `Connection`, `Statement`, `ResultSet` 같은 인터페이스가 표준을 정의하고, 각 데이터베이스 벤더가 자기 DB에 맞는 구현체(JDBC 드라이버)를 제공한다.
 우리가 쓰는 H2라면 `com.h2database:h2` 의존성 안에 드라이버가 들어 있다.
 덕분에 애플리케이션 코드는 표준 인터페이스에만 의존하고, DB를 바꾸면 드라이버와 SQL 방언만 바뀐다.
@@ -30,7 +30,7 @@ Spring 라이브러리는 아직 하나도 클래스패스에 없다.
 
 === 스키마: 덱과 카드
 
-이 장부터 4장까지는 Flashcard의 뼈대만 남긴 간결한 스키마를 쓴다.
+이 장부터 4장까지는 Flashcard의 핵심 테이블만 남긴 간결한 스키마를 쓴다.
 덱과 카드, 두 테이블이 전부다.
 
 [source,sql,indent=0]
@@ -129,7 +129,7 @@ include::{examples}/ch01-jdbc-basics/src/main/java/flashcard/jdbc/JdbcQuickTour.
 ----
 
 문자열을 이어 붙여 SQL을 만들지 않고 ``PreparedStatement``를 쓰는 이유는 두 가지다.
-첫째, *SQL 주입(injection) 공격을 원천 차단*한다. 바인딩된 값은 SQL 문법이 아니라 순수한 값으로만 취급된다.
+첫째, **SQL 주입(injection) 공격을 원천 차단**한다. 바인딩된 값은 SQL 문법이 아니라 순수한 값으로만 취급된다.
 둘째, DB가 같은 SQL의 실행 계획을 재사용할 수 있어 성능에도 유리하다.
 
 위 코드의 ``Statement.RETURN_GENERATED_KEYS``와 ``getGeneratedKeys()``는 자동 채번된 기본 키를 받아 오는 표준 방법이다.
@@ -205,7 +205,7 @@ include::{examples}/ch01-jdbc-basics/src/main/java/flashcard/jdbc/DeckImporter.j
 include::{examples}/ch01-jdbc-basics/src/test/java/flashcard/jdbc/DeckImporterTest.java[tag=rollback]
 ----
 
-트랜잭션 코드에서 눈여겨볼 것은 *같은 ``Connection``을 계속 써야 한다*는 점이다.
+트랜잭션 코드에서 눈여겨볼 것은 **같은 ``Connection``을 계속 써야 한다**는 점이다.
 트랜잭션은 커넥션에 묶여 있으므로, 중간에 다른 커넥션을 얻으면 그 작업은 트랜잭션 밖에서 실행된다.
 그래서 ``importDeck``은 커넥션을 인자로 넘겨 가며 내부 메서드를 호출한다.
 비즈니스 로직 구조가 트랜잭션 관리 방식에 끌려다니는 모습인데, 이 문제는 3장과 4장에서 Spring이 어떻게 풀어 주는지 보게 된다.

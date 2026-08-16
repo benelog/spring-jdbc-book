@@ -1,7 +1,7 @@
 == Spring JDBC Plus와 Flashcard 완성
 
-마지막 층이다.
-Spring JDBC Plus는 네이버가 만들어 공개한 Spring Data JDBC 확장 라이브러리로, 사내 여러 서비스에서 쓰이며 다듬어졌다.
+이 책이 쌓아 올린 마지막 레이어, Spring JDBC Plus다.
+네이버가 만들어 공개한 Spring Data JDBC 확장 라이브러리로, 사내 여러 서비스에서 쓰이며 다듬어졌다.
 방향은 명확하다. *Spring Data JDBC의 리포지토리 편의는 유지하되, 커스텀 SQL을 일급 시민으로 대접한다.*
 
 6장에서 남긴 아쉬움을 돌아보면 이 라이브러리가 무엇을 채우는지 보인다.
@@ -10,7 +10,7 @@ Spring JDBC Plus는 네이버가 만들어 공개한 Spring Data JDBC 확장 라
 * SQL 문자열과 실행 코드가 애너테이션에 뒤섞이는 문제 → SQL은 SQL 클래스로, 실행은 리포지토리 구현으로 분리하는 `JdbcRepositorySupport`.
 * ``save``의 insert/update 자동 판단 → 의도를 드러내는 `insert`/`update` 메서드를 가진 `JdbcRepository` 인터페이스.
 
-이 장에서는 Spring JDBC Plus의 사용법을 익히면서, 서문에서 약속한 Flashcard의 요구사항 전부 — 간격 반복 복습, 오늘 복습 큐, 재도전 라운드, 태그, 스마트 덱, 통계, CSV — 를 완성한다.
+이 장에서는 Spring JDBC Plus의 사용법을 익히면서, 서문에서 약속한 Flashcard의 요구사항 전부(간격 반복 복습, 오늘 복습 큐, 재도전 라운드, 태그, 스마트 덱, 통계, CSV)를 완성한다.
 예제 모듈은 ``examples/ch07-jdbc-plus``다.
 
 === 설정
@@ -84,7 +84,7 @@ include::{examples}/ch07-jdbc-plus/src/test/java/flashcard/plus/domain/ReviewSta
 Plus의 리포지토리는 역할이 셋으로 나뉜다.
 카드 리포지토리로 전체 모양을 보자.
 
-*(1) 인터페이스* — 표준 CRUD는 ``JdbcRepository``에서 상속받고, 조건 검색은 커스텀 인터페이스로 선언한다.
+*(1) 인터페이스*: 표준 CRUD는 ``JdbcRepository``에서 상속받고, 조건 검색은 커스텀 인터페이스로 선언한다.
 
 [source,java,indent=0]
 ----
@@ -99,7 +99,7 @@ include::{examples}/ch07-jdbc-plus/src/main/java/flashcard/plus/repository/CardR
 커스텀 메서드의 목록이 그대로 요구사항의 목록이다.
 오늘 복습 큐(`findDue`), 추천 복습 두 종류(`findOftenWrong`, `findStale`), 스마트 덱의 나머지 조건(`findRecent`, `findByTagName`).
 
-*(2) SQL 클래스* — ``SqlGeneratorSupport``를 상속하면 `sql` 객체를 통해 엔티티 기반 SQL 조각을 생성할 수 있다.
+*(2) SQL 클래스*: ``SqlGeneratorSupport``를 상속하면 `sql` 객체를 통해 엔티티 기반 SQL 조각을 생성할 수 있다.
 
 [source,java,indent=0]
 ----
@@ -117,7 +117,7 @@ include::{examples}/ch07-jdbc-plus/src/main/java/flashcard/plus/repository/CardS
 include::{examples}/ch07-jdbc-plus/src/main/java/flashcard/plus/repository/CardSql.java[tag=select-often-wrong]
 ----
 
-*(3) 구현* — ``JdbcRepositorySupport``를 상속하고, Spring Data의 관례(인터페이스 이름 + `Impl`)에 따라 자동으로 조립된다.
+*(3) 구현*: ``JdbcRepositorySupport``를 상속하고, Spring Data의 관례(인터페이스 이름 + `Impl`)에 따라 자동으로 조립된다.
 
 [source,java,indent=0]
 ----
@@ -132,14 +132,14 @@ include::{examples}/ch07-jdbc-plus/src/main/java/flashcard/plus/repository/CardR
 
 엔티티가 아닌 화면용 record는 5장처럼 ``RowMapper``를 지정해 받는다.
 덱 요약(카드 수 + 오늘 복습 수)이 그 예다.
-6장에서 정리한 "엔티티를 바깥 레이어까지 내보내지 않는다"는 원칙이 완성판에서도 그대로 이어지는 셈이다.
+6장에서 정리한 "엔티티를 바깥 레이어까지 내보내지 않는다"는 원칙이 완성판에서도 그대로 이어진다.
 
 [source,java,indent=0]
 ----
 include::{examples}/ch07-jdbc-plus/src/main/java/flashcard/plus/repository/DeckRepositoryImpl.java[tag=dto]
 ----
 
-Plus는 `NamedParameterJdbcTemplate` 위에 서 있으므로, 필요하면 언제든 그 층으로 내려갈 수 있다.
+Plus는 `NamedParameterJdbcTemplate` 위에 서 있으므로, 필요하면 언제든 그 레이어로 내려갈 수 있다.
 태그를 붙이는 upsert성 DML이 그렇다.
 
 [source,java,indent=0]
@@ -155,7 +155,7 @@ include::{examples}/ch07-jdbc-plus/src/main/java/flashcard/plus/repository/Smart
 ----
 
 기술 단계를 밟아 온 독자라면 이 그림이 익숙할 것이다.
-한 리포지토리 안에서 1~6장의 도구가 층층이 공존하고, 각 조회마다 가장 알맞은 층을 골라 쓴다.
+한 리포지토리 안에서 1~6장의 도구가 레이어를 이루며 공존하고, 각 조회마다 `NamedParameterJdbcTemplate` 직접 호출, 표준 `@Query`, Plus의 `JdbcRepositorySupport` 중 가장 알맞은 도구를 골라 쓴다.
 
 === 학습 흐름: 세션, 판정, 재도전 라운드
 
@@ -177,7 +177,7 @@ include::{examples}/ch07-jdbc-plus/src/main/java/flashcard/plus/service/StudySer
 복습 상태가 없으면 `insert`, 있으면 `update`.
 "새 객체인지" 프레임워크가 추측하게 두는 대신 코드가 의도를 말한다.
 
-요구사항의 규칙 — 재도전 라운드는 일정에 반영하지 않는다 — 가 지켜지는지는 테스트로 못 박는다.
+요구사항의 규칙(재도전 라운드는 일정에 반영하지 않는다)이 지켜지는지는 테스트로 못 박는다.
 
 [source,java,indent=0]
 ----
@@ -259,6 +259,6 @@ Spring JDBC Plus는 새로운 패러다임이 아니라 배치의 재조정이�
 SQL은 SQL 클래스에, 실행 코드는 리포지토리 구현에, 표준 CRUD는 인터페이스 상속에.
 그 결과 커스텀 SQL이 많은 실무형 앱에서도 각 코드가 제자리를 갖는다.
 
-완성된 앱의 데이터 액세스 코드를 훑어보면 이 책이 지나온 층이 모두 살아 있다.
+완성된 앱의 데이터 액세스 코드를 훑어보면 이 책이 지나온 레이어가 모두 살아 있다.
 스키마와 SQL(1장), 이름 있는 파라미터와 매핑(2장), 트랜잭션 경계(3~4장), 자동 설정과 테스트 슬라이스(5장), 애그리거트와 리포지토리(6장), 그리고 그것들을 묶는 Plus(7장).
-아래층을 알기에 위층의 선택이 자유롭다.
+아래 레이어를 알기에 위 레이어의 선택이 자유롭다.
