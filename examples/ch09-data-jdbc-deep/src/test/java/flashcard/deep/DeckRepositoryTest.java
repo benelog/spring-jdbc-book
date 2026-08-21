@@ -19,7 +19,7 @@ class DeckRepositoryTest {
 
     // tag::embedded[]
     @Test
-    @DisplayName("값 객체가 POLICY_ 접두사 컬럼들로 저장되고 다시 조립된다")
+    @DisplayName("값 객체가 POLICY_ 접두사 칼럼들로 저장되고 다시 조립된다")
     void embeddedRoundTrip() {
         Deck saved = deckRepository.save(new Deck("영어 단어장", new ReviewPolicy(10, 50)));
 

@@ -68,7 +68,7 @@ class DeckImportServiceTest {
     @DisplayName("롤백되면 알림이 발송되지 않는다")
     void noNotificationOnRollback() {
         List<Card> cards = List.of(
-                Card.of(null, "x".repeat(600), "컬럼 길이 초과")
+                Card.of(null, "x".repeat(600), "칼럼 길이 초과")
         );
 
         assertThatThrownBy(() -> deckImportService.importDeck("영어 단어장", cards))

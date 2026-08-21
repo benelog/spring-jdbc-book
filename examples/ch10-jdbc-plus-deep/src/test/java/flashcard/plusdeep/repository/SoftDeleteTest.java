@@ -29,7 +29,7 @@ class SoftDeleteTest {
 
         deckRepository.deleteById(saved.id());
 
-        // 행은 그대로 남아 있고, soft delete 컬럼만 바뀌었다
+        // 행은 그대로 남아 있고, soft delete 칼럼만 바뀌었다
         Deck found = deckRepository.findById(saved.id()).orElseThrow();
         assertThat(found.deleted()).isTrue();
     }

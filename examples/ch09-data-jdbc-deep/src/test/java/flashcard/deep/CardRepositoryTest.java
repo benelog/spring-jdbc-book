@@ -95,7 +95,7 @@ class CardRepositoryTest {
 
     // tag::converter[]
     @Test
-    @DisplayName("태그 묶음이 쉼표로 이은 문자열 한 컬럼으로 저장된다")
+    @DisplayName("태그 묶음이 쉼표로 이은 문자열 한 칼럼으로 저장된다")
     void tagsConverter() {
         Card saved = cardRepository.save(
                 Card.create(deckId, "resilient", "회복력 있는", Tags.of("형용사", "TOEIC")));

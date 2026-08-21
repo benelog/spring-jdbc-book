@@ -7,8 +7,8 @@ import flashcard.plus.domain.Card;
 // tag::class[]
 /**
  * 카드 조회 SQL 모음.
- * sql.columns(Card.class)가 엔티티에 맞는 SELECT 컬럼 목록을 만들어 주므로,
- * 컬럼이 늘어도 SQL을 일일이 고칠 필요가 없다.
+ * sql.columns(Card.class)가 엔티티에 맞는 SELECT 칼럼 목록을 만들어 주므로,
+ * 칼럼이 늘어도 SQL을 일일이 고칠 필요가 없다.
  */
 public class CardSql extends SqlGeneratorSupport {
 

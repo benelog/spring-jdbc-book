@@ -17,7 +17,7 @@ include::{examples}/ch10-jdbc-plus-deep/build.gradle[tag=deps]
 include::{examples}/ch10-jdbc-plus-deep/src/main/resources/schema.sql[tag=schema]
 ----
 
-덱에는 `deleted` 컬럼이, 카드에는 예문(card_example) 테이블이 붙었다.
+덱에는 `deleted` 칼럼이, 카드에는 예문(card_example) 테이블이 붙었다.
 각각 soft delete와 애그리거트 조회의 재료다.
 
 === Soft delete: 삭제를 UPDATE로
@@ -32,14 +32,14 @@ Plus는 이를 애너테이션 하나로 처리한다.
 include::{examples}/ch10-jdbc-plus-deep/src/main/java/flashcard/plusdeep/domain/Deck.java[tag=class]
 ----
 
-``@SoftDeleteColumn``이 붙으면 리포지토리의 `delete` 계열 메서드가 DELETE 대신 해당 컬럼을 `valueAsDeleted` 값으로 바꾸는 UPDATE를 실행한다.
+``@SoftDeleteColumn``이 붙으면 리포지토리의 `delete` 계열 메서드가 DELETE 대신 해당 칼럼을 `valueAsDeleted` 값으로 바꾸는 UPDATE를 실행한다.
 
 [source,java,indent=0]
 ----
 include::{examples}/ch10-jdbc-plus-deep/src/test/java/flashcard/plusdeep/repository/SoftDeleteTest.java[tag=soft-delete]
 ----
 
-`boolean` 대신 ``ValueType.STRING``을 쓰면 `state` 컬럼을 `'DELETED'` 같은 문자열로 바꾸는 방식도 가능하다.
+`boolean` 대신 ``ValueType.STRING``을 쓰면 `state` 칼럼을 `'DELETED'` 같은 문자열로 바꾸는 방식도 가능하다.
 상태가 셋 이상인 모델(활성/보관/삭제)에 어울린다.
 
 주의할 점이 하나 있다. 위 테스트에서 보듯 *조회는 자동으로 걸러 주지 않는다.*
@@ -96,7 +96,7 @@ include::{examples}/ch10-jdbc-plus-deep/src/main/java/flashcard/plusdeep/reposit
 include::{examples}/ch10-jdbc-plus-deep/src/test/java/flashcard/plusdeep/repository/GeneratedSqlTest.java[tag=aggregate-sql]
 ----
 
-``aggregateColumns``가 자식 컬럼에 별칭을 붙여 SELECT 목록을 만들고, ``aggregateTables``가 `LEFT OUTER JOIN` 절을 만든다.
+``aggregateColumns``가 자식 칼럼에 별칭을 붙여 SELECT 목록을 만들고, ``aggregateTables``가 `LEFT OUTER JOIN` 절을 만든다.
 조인 결과의 여러 행을 카드 하나로 다시 접는 일은 ``AggregateResultSetExtractor``가 맡는다.
 구현에서는 ``find``에 extractor를 넘기기만 하면 된다.
 
@@ -110,8 +110,8 @@ include::{examples}/ch10-jdbc-plus-deep/src/main/java/flashcard/plusdeep/reposit
 include::{examples}/ch10-jdbc-plus-deep/src/test/java/flashcard/plusdeep/repository/CardRepositoryTest.java[tag=aggregate]
 ----
 
-한 가지 함정은 WHERE 조건을 *루트 컬럼에만* 걸어야 한다는 것이다.
-예문 컬럼으로 행을 거르면 조건에 걸린 예문만 남은 "부분 애그리거트"가 조립된다.
+한 가지 함정은 WHERE 조건을 *루트 칼럼에만* 걸어야 한다는 것이다.
+예문 칼럼으로 행을 거르면 조건에 걸린 예문만 남은 "부분 애그리거트"가 조립된다.
 JPA의 fetch join에서도 똑같이 만나는, 조인 기반 애그리거트 조회의 본질적인 제약이다.
 
 === saveBatch: 대량 저장
@@ -185,7 +185,7 @@ include::{examples}/ch10-jdbc-plus-deep/src/test/java/flashcard/plusdeep/reposit
 include::{examples}/ch10-jdbc-plus-deep/src/test/java/flashcard/plusdeep/repository/JdbcRepositoryFeaturesTest.java[tag=paging]
 ----
 
-Query by Example은 "이렇게 생긴 놈을 찾아 달라"고 견본 객체로 묻는 방식이다.
+Query by Example은 "이렇게 생긴 카드를 찾아 달라"고 견본 객체로 묻는 방식이다.
 검색 폼처럼 조건 조합이 유동적인 화면에서 SQL 분기를 줄여 준다.
 
 [source,java,indent=0]
@@ -202,7 +202,7 @@ include::{examples}/ch10-jdbc-plus-deep/src/test/java/flashcard/plusdeep/reposit
 ----
 
 스트림은 소비가 끝날 때까지 커넥션을 물고 있으므로 try-with-resources와 트랜잭션 안에서 써야 한다.
-그리고 이 책의 일관된 관점 하나. Example과 Criteria는 편리하지만 조건이 복잡해지면 금세 표현력의 벽을 만난다.
+그리고 이 책의 일관된 관점 하나. Example과 Criteria는 편리하지만, 조건이 복잡해지면 이 API만으로는 표현할 수 없는 경우가 금세 나온다.
 그때가 SQL 클래스로 내려갈 때다.
 
 === JdbcDaoSupport: 엔티티 없는 조회 전용 클래스
@@ -226,7 +226,7 @@ include::{examples}/ch10-jdbc-plus-deep/src/test/java/flashcard/plusdeep/reposit
 === 여기서 다루지 않은 것
 
 Plus에는 이 밖에도 몇 가지가 더 있다.
-커스텀 SQL에서 테이블 별칭을 제어하는 ``@SqlTableAlias``, 컬럼을 SQL 함수 표현식으로 읽는 ``@SqlFunction``, 그리고 `JdbcReactiveTemplate` 같은 리액티브 지원이다.
+커스텀 SQL에서 테이블 별칭을 제어하는 ``@SqlTableAlias``, 칼럼을 SQL 함수 표현식으로 읽는 ``@SqlFunction``, 그리고 `JdbcReactiveTemplate` 같은 리액티브 지원이다.
 필요해졌을 때 공식 저장소(github.com/naver/spring-jdbc-plus)의 문서와 테스트 코드를 보면 이 장의 연장선에서 어렵지 않게 읽을 수 있을 것이다.
 
 === 정리

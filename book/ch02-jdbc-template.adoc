@@ -51,7 +51,7 @@ NamedParameterJdbcTemplate jdbc = new NamedParameterJdbcTemplate(dataSource);
 Spring JDBC는 호출한 시점에 그 SQL을 실행할 뿐, 세션 캐시나 지연 실행 같은 암묵적인 동작이 없다.
 배치 실행조차 ``batchUpdate``라는 별도 메서드로 의도를 드러내야 한다.
 
-물론 Spring JDBC가 끝판왕이라는 뜻은 아니다.
+물론 Spring JDBC가 만능이라는 뜻은 아니다.
 SQL 문자열 자체의 타입 안전성까지 원한다면 Querydsl SQL이나 jOOQ가, 풍부한 객체 매핑이 필요하다면 JPA가 다음 선택지다.
 이 책의 후반부에서 다루는 Spring Data JDBC와 Spring JDBC Plus는 Spring JDBC의 단순함을 지키면서 반복 작업을 더 줄이는 중간 선택지다.
 
@@ -148,7 +148,7 @@ Hibernate도 3.0부터 checked 예외를 버렸고, 그 경험 위에서 표준�
 ==== 잡아서 쓸모 있게: DuplicateKeyException
 
 번역된 예외가 실제로 유용해지는 순간은 **골라 잡을 때**다.
-`decks` 테이블의 `name` 컬럼에는 unique 제약을 걸어 두었다.
+`decks` 테이블의 `name` 칼럼에는 unique 제약을 걸어 두었다.
 같은 이름의 덱을 두 번 만들려 하면 ``DuplicateKeyException``이 날아오는데, 이를 잡아 "이미 있으면 기존 것을 쓴다"로 바꾸면 이런 메서드가 된다.
 (``insert``는 뒤의 SimpleJdbcInsert 절에서 소개할 저장 메서드다.)
 
@@ -219,8 +219,8 @@ SQL을 한곳에 모아 DBA 검수를 받는 관행이 필요하다면, XML 파�
 private final RowMapper<Card> cardMapper = DataClassRowMapper.newInstance(Card.class);
 ----
 
-``DataClassRowMapper``는 record의 생성자 파라미터 이름과 조회 결과의 컬럼 이름을 맞춰 자동으로 매핑한다.
-``deck_id``처럼 스네이크 표기 컬럼은 ``deckId``처럼 캐멀 표기 프로퍼티에 알아서 연결된다.
+``DataClassRowMapper``는 record의 생성자 파라미터 이름과 조회 결과의 칼럼 이름을 맞춰 자동으로 매핑한다.
+``deck_id``처럼 스네이크 표기 칼럼은 ``deckId``처럼 캐멀 표기 프로퍼티에 알아서 연결된다.
 일반 클래스의 setter 기반 매핑이 필요하면 형제인 ``BeanPropertyRowMapper``를 쓴다.
 자동 매핑으로 안 되는 특수한 변환이 필요할 때만 람다로 직접 ``RowMapper``를 쓰면 된다.
 
@@ -365,10 +365,10 @@ include::{examples}/ch02-jdbc-template/src/main/java/flashcard/template/CardRepo
 이 장을 마치기 전에, 초기화 코드에만 등장하고 설명을 미뤄 둔 ``SimpleJdbcInsert``를 살펴보자.
 
 insert 문은 유난히 기계적이다.
-컬럼 이름을 나열하고, 똑같은 개수의 플레이스홀더를 한 번 더 나열한다.
-컬럼이 하나 늘 때마다 양쪽을 같이 고쳐야 하지만, 정작 문장 안에 로직이라 할 만한 것은 없다.
+칼럼 이름을 나열하고, 똑같은 개수의 플레이스홀더를 한 번 더 나열한다.
+칼럼이 하나 늘 때마다 양쪽을 같이 고쳐야 하지만, 정작 문장 안에 로직이라 할 만한 것은 없다.
 ``SimpleJdbcInsert``는 이 반복을 통째로 없앤다.
-테이블 이름만 알려 주면 DB 메타데이터에서 컬럼 목록을 읽어 insert SQL을 스스로 만들어 실행한다.
+테이블 이름만 알려 주면 DB 메타데이터에서 칼럼 목록을 읽어 insert SQL을 스스로 만들어 실행한다.
 
 ``DeckRepository``의 생성자에서 만들었던 ``deckInsert``를 다시 보자.
 
@@ -377,8 +377,8 @@ insert 문은 유난히 기계적이다.
 include::{examples}/ch02-jdbc-template/src/main/java/flashcard/template/DeckRepository.java[tag=simple-insert-init]
 ----
 
-``withTableName``이 대상 테이블을, ``usingGeneratedKeyColumns``가 DB가 채번하는 키 컬럼을 지정한다.
-사용할 때는 컬럼 이름을 키로 한 Map을 넘기면 끝이다.
+``withTableName``이 대상 테이블을, ``usingGeneratedKeyColumns``가 DB가 채번하는 키 칼럼을 지정한다.
+사용할 때는 칼럼 이름을 키로 한 Map을 넘기면 끝이다.
 
 [source,java,indent=0]
 ----
@@ -386,15 +386,15 @@ include::{examples}/ch02-jdbc-template/src/main/java/flashcard/template/DeckRepo
 ----
 
 ``executeAndReturnKey``는 insert를 실행하고 채번된 키를 돌려준다.
-`decks` 테이블에 컬럼이 늘어도 이 메서드에서 고칠 SQL이 없다.
-Map에 값을 하나 더 담으면 되고, 담지 않은 컬럼은 insert 문에서 빠져 DB의 default 값이 적용된다.
+`decks` 테이블에 칼럼이 늘어도 이 메서드에서 고칠 SQL이 없다.
+Map에 값을 하나 더 담으면 되고, 담지 않은 칼럼은 insert 문에서 빠져 DB의 default 값이 적용된다.
 
 한 가지 주의할 점이 있다.
-Map의 키는 Java 프로퍼티 이름이 아니라 **컬럼 이름**이다.
-`deck_id` 컬럼에 값을 넣으려면 키도 ``"deck_id"``여야 하고, ``"deckId"``라고 적으면 오류조차 없이 그 컬럼만 조용히 insert에서 빠진다.
+Map의 키는 Java 프로퍼티 이름이 아니라 **칼럼 이름**이다.
+`deck_id` 칼럼에 값을 넣으려면 키도 ``"deck_id"``여야 하고, ``"deckId"``라고 적으면 오류조차 없이 그 칼럼만 조용히 insert에서 빠진다.
 
 객체의 프로퍼티를 그대로 쓰고 싶다면 이번에도 ``BeanPropertySqlParameterSource``가 해결한다.
-이쪽은 `deckId` 프로퍼티를 `deck_id` 컬럼에 알아서 연결해 준다.
+이쪽은 `deckId` 프로퍼티를 `deck_id` 칼럼에 알아서 연결해 준다.
 카드 저장소의 초기화 코드에 같은 방식으로 만들어 둔 ``cardInsert``로 카드를 저장하는 코드다.
 
 [source,java,indent=0]
@@ -403,11 +403,11 @@ include::{examples}/ch02-jdbc-template/src/main/java/flashcard/template/CardRepo
 ----
 
 앞에서 본 KeyHolder 방식의 ``insert``와 하는 일은 같고, 차이는 SQL이 코드에 보이느냐뿐이다.
-컬럼이 많은 테이블의 단순 insert라면 ``SimpleJdbcInsert``가 코드를 크게 줄여 주고, DB 함수 호출이나 select 결과의 insert처럼 SQL 수준의 제어가 필요하면 SQL을 직접 쓰는 쪽이 맞다.
+칼럼이 많은 테이블의 단순 insert라면 ``SimpleJdbcInsert``가 코드를 크게 줄여 주고, DB 함수 호출이나 select 결과의 insert처럼 SQL 수준의 제어가 필요하면 SQL을 직접 쓰는 쪽이 맞다.
 
 몇 가지 세부 사항도 알아 두자.
 메타데이터 조회는 최초 실행 때 한 번만 일어나고, 그때 만들어진 insert 문이 이후 계속 재사용된다.
-insert 대상 컬럼을 명시적으로 제한하려면 ``usingColumns``를 쓴다.
+insert 대상 칼럼을 명시적으로 제한하려면 ``usingColumns``를 쓴다.
 채번 키가 필요 없으면 `execute`, 여러 건을 한 번에 넣을 때는 ``executeBatch``를 쓴다.
 같은 원리로 스토어드 프로시저 호출을 감싸 주는 형제 클래스 ``SimpleJdbcCall``도 있다.
 
@@ -492,8 +492,8 @@ include::{examples}/ch02-jdbc-template/src/test/java/flashcard/template/CardRepo
 === 정리
 
 이 장에서 순수 JDBC의 고통 두 가지가 사라졌다.
-자원 정리 상용구는 템플릿이 삼켰고, checked ``SQLException``은 의미 있는 unchecked 예외 계층으로 바뀌었다.
-``DataClassRowMapper``와 ``BeanPropertySqlParameterSource``는 "컬럼 ↔ 프로퍼티" 방향의 반복 작업까지 덜어 주고, ``SimpleJdbcInsert``는 insert SQL 작성 자체를 생략하게 해 준다.
+자원 정리 상용구는 템플릿이 대신 처리하게 됐고, checked ``SQLException``은 의미 있는 unchecked 예외 계층으로 바뀌었다.
+``DataClassRowMapper``와 ``BeanPropertySqlParameterSource``는 "칼럼 ↔ 프로퍼티" 방향의 반복 작업까지 덜어 주고, ``SimpleJdbcInsert``는 insert SQL 작성 자체를 생략하게 해 준다.
 두 템플릿의 갈래를 하나의 fluent API로 합친 ``JdbcClient``라는 새 입구도 생겼다.
 
 남은 하나가 트랜잭션이다.

@@ -23,7 +23,7 @@ class GeneratedSqlTest {
     @Test
     @DisplayName("aggregateColumns와 aggregateTables가 자식 테이블까지 포함한 SQL 조각을 만든다")
     void aggregateSqlFragments() {
-        // 자식 컬럼은 "EXAMPLES_" 접두사가 붙은 별칭으로 생성된다
+        // 자식 칼럼은 "EXAMPLES_" 접두사가 붙은 별칭으로 생성된다
         assertThat(sqlProvider.aggregateColumns(Card.class))
                 .contains("\"CARD\".\"TEXT\" AS \"TEXT\"")
                 .contains("\"examples\".\"SENTENCE\" AS \"EXAMPLES_SENTENCE\"");

@@ -10,7 +10,7 @@ public class CardSql extends SqlGeneratorSupport {
     // tag::aggregate[]
     /**
      * 애그리거트 전체(카드 + 예문)를 한 번에 읽는 SELECT.
-     * aggregateColumns가 자식 테이블 컬럼까지, aggregateTables가 JOIN 절까지 만들어 준다.
+     * aggregateColumns가 자식 테이블 칼럼까지, aggregateTables가 JOIN 절까지 만들어 준다.
      */
     public String selectByKeyword() {
         return """

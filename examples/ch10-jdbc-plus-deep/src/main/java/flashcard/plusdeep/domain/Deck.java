@@ -8,7 +8,7 @@ import com.navercorp.spring.jdbc.plus.commons.annotations.SoftDeleteColumn;
 // tag::class[]
 /**
  * soft delete가 적용된 덱.
- * 리포지토리로 삭제하면 DELETE 대신 deleted 컬럼을 true로 바꾸는 UPDATE가 나간다.
+ * 리포지토리로 삭제하면 DELETE 대신 deleted 칼럼을 true로 바꾸는 UPDATE가 나간다.
  */
 @Table("DECK")
 public record Deck(@Id Long id,

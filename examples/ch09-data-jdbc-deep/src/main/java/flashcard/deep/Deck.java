@@ -17,7 +17,7 @@ public class Deck {
 
     private String name;
 
-    /** 값 객체를 같은 테이블의 POLICY_ 접두사 컬럼들로 펼친다. */
+    /** 값 객체를 같은 테이블의 POLICY_ 접두사 칼럼들로 펼친다. */
     @Embedded.Nullable(prefix = "POLICY_")
     private ReviewPolicy policy;
 

@@ -44,7 +44,7 @@ class DeckImporterTest {
     void rollbackOnFailure() throws SQLException {
         List<Card> cards = List.of(
                 Card.of(null, "resilient", "회복력 있는"),
-                Card.of(null, "too long".repeat(100), "컬럼 길이 제한 초과")  // 500자 초과 → 실패
+                Card.of(null, "too long".repeat(100), "칼럼 길이 제한 초과")  // 500자 초과 → 실패
         );
 
         assertThatThrownBy(() -> importer.importDeck("영어 단어장", cards))

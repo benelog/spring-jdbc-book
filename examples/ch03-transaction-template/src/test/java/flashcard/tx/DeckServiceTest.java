@@ -57,7 +57,7 @@ class DeckServiceTest {
     void rollbackOnFailure() {
         List<Card> cards = List.of(
                 Card.of(null, "resilient", "회복력 있는"),
-                Card.of(null, "x".repeat(600), "컬럼 길이 제한 초과")
+                Card.of(null, "x".repeat(600), "칼럼 길이 제한 초과")
         );
 
         assertThatThrownBy(() -> deckService.importDeck("영어 단어장", cards))

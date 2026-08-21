@@ -6,11 +6,11 @@
 
 6장에서 남긴 아쉬움을 돌아보면 이 라이브러리가 무엇을 채우는지 보인다.
 
-* ``@Query``의 SQL마다 컬럼 목록을 나열하는 반복 → 엔티티 정의에서 SELECT 컬럼 목록을 생성해 주는 `SqlGeneratorSupport`.
+* ``@Query``의 SQL마다 칼럼 목록을 나열하는 반복 → 엔티티 정의에서 SELECT 칼럼 목록을 생성해 주는 `SqlGeneratorSupport`.
 * SQL 문자열과 실행 코드가 애너테이션에 뒤섞이는 문제 → SQL은 SQL 클래스로, 실행은 리포지토리 구현으로 분리하는 `JdbcRepositorySupport`.
 * ``save``의 insert/update 자동 판단 → 의도를 드러내는 `insert`/`update` 메서드를 가진 `JdbcRepository` 인터페이스.
 
-이 장에서는 Spring JDBC Plus의 사용법을 익히면서, 서문에서 약속한 Flashcard의 요구사항 전부(간격 반복 복습, 오늘 복습 큐, 재도전 라운드, 태그, 스마트 덱, 통계, CSV)를 완성한다.
+이 장에서는 Spring JDBC Plus의 사용법을 익히면서, "들어가며"에서 약속한 Flashcard의 요구사항 전부(간격 반복 복습, 오늘 복습 큐, 재도전 라운드, 태그, 스마트 덱, 통계, CSV)를 완성한다.
 예제 모듈은 ``examples/ch07-jdbc-plus``다.
 
 === 설정
@@ -106,8 +106,8 @@ include::{examples}/ch07-jdbc-plus/src/main/java/flashcard/plus/repository/CardR
 include::{examples}/ch07-jdbc-plus/src/main/java/flashcard/plus/repository/CardSql.java[tag=select-due]
 ----
 
-``sql.columns(Card.class)``가 엔티티 정의에서 SELECT 컬럼 목록을 만들어 준다.
-카드에 컬럼이 추가되어도 이 SQL들은 고칠 필요가 없다.
+``sql.columns(Card.class)``가 엔티티 정의에서 SELECT 칼럼 목록을 만들어 준다.
+카드에 칼럼이 추가되어도 이 SQL들은 고칠 필요가 없다.
 나머지는 텍스트 블록에 담긴 평범한 SQL이다. 2장에서 강조한 "복사해서 콘솔에 붙여 볼 수 있는 SQL"이 유지된다.
 
 오답률 조건처럼 계산이 들어가는 쿼리도 SQL로 정직하게 표현된다.
@@ -173,7 +173,7 @@ include::{examples}/ch07-jdbc-plus/src/main/java/flashcard/plus/service/StudySes
 include::{examples}/ch07-jdbc-plus/src/main/java/flashcard/plus/service/StudyService.java[tag=answer]
 ----
 
-``JdbcRepository``의 `insert`/`update` 분리가 여기서 빛난다.
+``JdbcRepository``의 `insert`/`update` 분리가 여기서 효과를 낸다.
 복습 상태가 없으면 `insert`, 있으면 `update`.
 "새 객체인지" 프레임워크가 추측하게 두는 대신 코드가 의도를 말한다.
 
@@ -251,7 +251,7 @@ include::{examples}/ch07-jdbc-plus/src/test/java/flashcard/plus/web/FlashcardPlu
 ----
 
 ``./gradlew :ch07-jdbc-plus:bootRun``으로 띄우면 홈에서 오늘 복습 큐와 추천 복습 타일, 덱과 스마트 덱을 만나고, ``/stats``에서 30일 그래프와 연속 학습일을 볼 수 있다.
-서문에서 약속한 Flashcard가 완성됐다.
+"들어가며"에서 약속한 Flashcard가 완성됐다.
 
 === 정리
 
@@ -259,6 +259,6 @@ Spring JDBC Plus는 새로운 패러다임이 아니라 배치의 재조정이�
 SQL은 SQL 클래스에, 실행 코드는 리포지토리 구현에, 표준 CRUD는 인터페이스 상속에.
 그 결과 커스텀 SQL이 많은 실무형 앱에서도 각 코드가 제자리를 갖는다.
 
-완성된 앱의 데이터 액세스 코드를 훑어보면 이 책이 지나온 레이어가 모두 살아 있다.
+완성된 앱의 데이터 액세스 코드를 살펴보면 이 책이 지나온 레이어가 모두 살아 있다.
 스키마와 SQL(1장), 이름 있는 파라미터와 매핑(2장), 트랜잭션 경계(3~4장), 자동 설정과 테스트 슬라이스(5장), 애그리거트와 리포지토리(6장), 그리고 그것들을 묶는 Plus(7장).
 아래 레이어를 알기에 위 레이어의 선택이 자유롭다.
