@@ -97,7 +97,7 @@ include::{examples}/ch10-jdbc-plus-deep/src/test/java/flashcard/plusdeep/reposit
 ----
 
 ``aggregateColumns``가 자식 칼럼에 별칭을 붙여 SELECT 목록을 만들고, ``aggregateTables``가 `LEFT OUTER JOIN` 절을 만든다.
-조인 결과의 여러 행을 카드 하나로 다시 접는 일은 ``AggregateResultSetExtractor``가 맡는다.
+조인 결과의 여러 행을 카드 하나로 조립하는 일은 ``AggregateResultSetExtractor``가 맡는다.
 구현에서는 ``find``에 extractor를 넘기기만 하면 된다.
 
 [source,java,indent=0]
@@ -138,7 +138,7 @@ include::{examples}/ch10-jdbc-plus-deep/src/test/java/flashcard/plusdeep/reposit
 INSERT 문장 하나에 파라미터 100벌이 배치로 실려 나간다.
 알아 둘 제약 두 가지.
 첫째, ``saveBatch``는 엔티티에서 getter로 값을 읽는 ``BeanPropertySqlParameterSource``를 쓰므로, 대상 엔티티는 record가 아닌 JavaBean 스타일이어야 한다(이 장의 ``Card``가 클래스인 이유다).
-둘째, SQL에 적은 테이블 한 곳에만 닿는다. 자식(예문)까지 함께 저장하지는 않으므로, 애그리거트 전체가 필요한 저장은 여전히 `insert`/``save``의 몫이다.
+둘째, SQL에 적은 테이블 하나에만 INSERT한다. 자식(예문)까지 함께 저장하지는 않으므로, 애그리거트 전체가 필요한 저장은 여전히 `insert`/``save``의 몫이다.
 
 === 파라미터 소스 확장
 
@@ -165,7 +165,7 @@ SQL 파라미터로 넘기기 전에 값을 변환하는 규칙도 등록할 수
 include::{examples}/ch10-jdbc-plus-deep/src/test/java/flashcard/plusdeep/repository/ParameterSourceTest.java[tag=custom-converter]
 ----
 
-``CompositeSqlParameterSource``는 여러 소스를 겹쳐 하나로 만든다.
+``CompositeSqlParameterSource``는 여러 소스를 합쳐 하나로 만든다.
 "엔티티에서 뽑은 파라미터 + 추가 조건 몇 개" 조합에서 유용하고, `JdbcRepositorySupport` 안에서는 `compositeSqlParameterSource` 메서드로 바로 쓸 수 있다.
 
 [source,java,indent=0]
@@ -201,7 +201,7 @@ include::{examples}/ch10-jdbc-plus-deep/src/test/java/flashcard/plusdeep/reposit
 include::{examples}/ch10-jdbc-plus-deep/src/test/java/flashcard/plusdeep/repository/JdbcRepositoryFeaturesTest.java[tag=criteria]
 ----
 
-스트림은 소비가 끝날 때까지 커넥션을 물고 있으므로 try-with-resources와 트랜잭션 안에서 써야 한다.
+스트림은 소비가 끝날 때까지 커넥션을 열어 두므로 try-with-resources와 트랜잭션 안에서 써야 한다.
 그리고 이 책의 일관된 관점 하나. Example과 Criteria는 편리하지만, 조건이 복잡해지면 이 API만으로는 표현할 수 없는 경우가 금세 나온다.
 그때가 SQL 클래스로 내려갈 때다.
 
@@ -221,7 +221,7 @@ include::{examples}/ch10-jdbc-plus-deep/src/test/java/flashcard/plusdeep/reposit
 ----
 
 7장에서 통계 조회를 리포지토리 구현(`ReviewLogRepositoryImpl`)에 두었던 것과 비교해 보면, 어느 쪽이든 같은 도구가 쓰인다.
-엔티티와 연이 있으면 리포지토리로, 없으면 DAO로. 배치의 문제일 뿐이다.
+엔티티와 연이 있으면 리포지토리로, 없으면 DAO로. 어디에 두느냐의 문제일 뿐이다.
 
 === 여기서 다루지 않은 것
 

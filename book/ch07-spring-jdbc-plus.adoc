@@ -72,7 +72,7 @@ include::{examples}/ch07-jdbc-plus/src/main/java/flashcard/plus/domain/ReviewSta
 ----
 
 맞히면 1일 → 6일 → 2.5배씩, 틀리면 1일로.
-순수 함수이므로 테스트가 즐겁다.
+순수 함수이므로 DB 없이 테스트한다.
 
 [source,java,indent=0]
 ----
@@ -154,7 +154,7 @@ include::{examples}/ch07-jdbc-plus/src/main/java/flashcard/plus/repository/TagRe
 include::{examples}/ch07-jdbc-plus/src/main/java/flashcard/plus/repository/SmartDeckRepository.java[tag=class]
 ----
 
-기술 단계를 밟아 온 독자라면 이 그림이 익숙할 것이다.
+기술 단계를 밟아 온 독자라면 이 구성이 익숙할 것이다.
 한 리포지토리 안에서 1~6장의 도구가 레이어를 이루며 공존하고, 각 조회마다 `NamedParameterJdbcTemplate` 직접 호출, 표준 `@Query`, Plus의 `JdbcRepositorySupport` 중 가장 알맞은 도구를 골라 쓴다.
 
 === 학습 흐름: 세션, 판정, 재도전 라운드
@@ -255,7 +255,7 @@ include::{examples}/ch07-jdbc-plus/src/test/java/flashcard/plus/web/FlashcardPlu
 
 === 정리
 
-Spring JDBC Plus는 새로운 패러다임이 아니라 배치의 재조정이다.
+Spring JDBC Plus는 새로운 패러다임이 아니라 코드를 두는 자리의 재조정이다.
 SQL은 SQL 클래스에, 실행 코드는 리포지토리 구현에, 표준 CRUD는 인터페이스 상속에.
 그 결과 커스텀 SQL이 많은 실무형 앱에서도 각 코드가 제자리를 갖는다.
 

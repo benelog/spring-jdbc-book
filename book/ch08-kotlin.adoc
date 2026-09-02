@@ -59,7 +59,7 @@ include::{examples}/ch08-kotlin/src/main/kotlin/flashcard/kotlin/CardRepository.
 ----
 
 호출하는 쪽은 ``cards.findById(1)?.text ?: "없음"``처럼 안전 호출과 엘비스 연산자로 잇는다.
-컴파일러가 null 처리를 강제하므로, Java에서 ``Optional``을 벗겨 쓰다 나는 실수가 원천 봉쇄된다.
+컴파일러가 null 처리를 강제하므로, Java에서 ``Optional``에서 값을 꺼내 쓰다 나는 실수가 컴파일 오류로 잡힌다.
 
 === checked 예외가 없는 언어에서의 예외 처리
 
@@ -107,7 +107,7 @@ include::{examples}/ch08-kotlin/src/main/kotlin/flashcard/kotlin/CardRepository.
 
 2장에서 소개한 ``JdbcClient``는 fluent API라서 Kotlin 문법과도 잘 어울린다.
 다만 이 책을 쓰는 시점의 ``spring-jdbc``에 들어 있는 공식 Kotlin 확장 함수는 앞에서 본 템플릿용(``JdbcOperations``, ``MapSqlParameterSource``)까지라서, ``JdbcClient``에서는 매핑 타입을 ``query(Card::class.java)``처럼 클래스 리터럴로 넘겨야 한다.
-이 공백은 reified 확장 함수를 직접 선언해 메꿀 수 있다.
+이 빠진 부분은 reified 확장 함수를 직접 선언해 채울 수 있다.
 
 [source,kotlin,indent=0]
 ----
