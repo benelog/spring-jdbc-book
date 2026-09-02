@@ -56,7 +56,7 @@ include::{examples}/ch10-jdbc-plus-deep/src/main/java/flashcard/plusdeep/reposit
 include::{examples}/ch10-jdbc-plus-deep/src/main/java/flashcard/plusdeep/repository/DeckRepositoryImpl.java[tag=class]
 ----
 
-휴지통 비우기·복원까지 묶으면 이렇게 동작한다.
+휴지통 비우기·복원까지 구현하면 이렇게 동작한다.
 복원은 `deleted` 값을 되돌리는 평범한 ``update``다.
 
 [source,java,indent=0]
