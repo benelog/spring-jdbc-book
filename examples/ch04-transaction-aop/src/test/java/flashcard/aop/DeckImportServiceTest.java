@@ -9,7 +9,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -23,7 +22,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @SpringJUnitConfig(DeckImportServiceTest.TestConfig.class)
 class DeckImportServiceTest {
 
-    @Configuration
     @Import(AppConfig.class)
     static class TestConfig {
 

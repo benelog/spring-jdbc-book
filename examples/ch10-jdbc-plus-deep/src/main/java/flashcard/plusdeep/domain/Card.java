@@ -10,7 +10,7 @@ import org.springframework.data.relational.core.mapping.Table;
 // tag::class[]
 /**
  * 예문을 거느린 카드 애그리거트.
- * saveBatch가 getter로 값을 읽으므로 record 대신 JavaBean 스타일 클래스로 만들었다.
+ * 예문을 추가하는 메서드를 두기 위해 record 대신 클래스로 만들었다.
  */
 @Table("CARD")
 public class Card {

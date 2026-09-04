@@ -9,7 +9,6 @@ import com.zaxxer.hikari.HikariDataSource;
 
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.jdbc.datasource.init.ResourceDatabasePopulator;
@@ -20,7 +19,6 @@ import org.springframework.jdbc.datasource.init.ResourceDatabasePopulator;
  */
 public class AopQuickTour {
 
-    @Configuration
     @Import(AppConfig.class)
     static class FileDbConfig {
 

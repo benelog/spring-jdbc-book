@@ -80,9 +80,10 @@ include::{examples}/ch10-jdbc-plus-deep/src/main/java/flashcard/plusdeep/domain/
 include::{examples}/ch10-jdbc-plus-deep/src/main/java/flashcard/plusdeep/domain/CardExample.java[tag=class]
 ----
 
-표준 Spring Data JDBC는 이런 애그리거트를 조회할 때 루트와 자식을 각각의 쿼리로 읽는다.
+표준 Spring Data JDBC는 기본 설정에서 이런 애그리거트를 조회할 때 루트와 자식을 각각의 쿼리로 읽는다.
 카드 목록 화면처럼 루트가 여럿인 조회에서는 쿼리 수가 늘어나는 부담이 있다.
-Plus의 `aggregateColumns`/``aggregateTables``는 조인 한 번으로 애그리거트 전체를 읽는 커스텀 SQL을 만들 수 있게 해 준다.
+표준에도 ``JdbcMappingContext``의 ``setSingleQueryLoadingEnabled``로 조인 한 번에 읽는 방식을 켜는 선택지가 있지만, `findAll`, ``findById`` 같은 기본 조회에만 적용되고 직접 쓴 SQL에는 미치지 않는다.
+Plus의 `aggregateColumns`/``aggregateTables``는 그 조인 한 번 읽기를 커스텀 SQL에서 쓸 수 있게 해 준다.
 
 [source,java,indent=0]
 ----
@@ -116,7 +117,7 @@ JPA의 fetch join에서도 똑같이 만나는, 조인 기반 애그리거트 �
 
 === saveBatch: 대량 저장
 
-4장과 7장에서 만든 CSV 가져오기는 카드를 한 장씩 INSERT했다.
+2장과 3장에서는 ``batchUpdate``로 묶어 보냈던 카드 저장을, 4장과 7장의 CSV 가져오기는 트랜잭션 경계에 집중하느라 한 장씩 INSERT했다.
 수백 장쯤은 문제없지만, 수만 장이 되면 왕복 횟수가 병목이 된다.
 ``JdbcRepositorySupport``의 ``saveBatch``는 2장에서 본 JDBC 배치를 Plus 스타일로 감싼 것이다.
 
@@ -136,8 +137,9 @@ include::{examples}/ch10-jdbc-plus-deep/src/test/java/flashcard/plusdeep/reposit
 ----
 
 INSERT 문장 하나에 파라미터 100벌이 배치로 실려 나간다.
-알아 둘 제약 두 가지.
-첫째, ``saveBatch``는 엔티티에서 getter로 값을 읽는 ``BeanPropertySqlParameterSource``를 쓰므로, 대상 엔티티는 record가 아닌 JavaBean 스타일이어야 한다(이 장의 ``Card``가 클래스인 이유다).
+알아 둘 점 두 가지.
+첫째, ``saveBatch``는 엔티티 하나하나를 2장의 ``BeanPropertySqlParameterSource``와 같은 방식의 파라미터 소스로 바꿔 SQL의 이름 있는 파라미터에 연결한다.
+2장에서처럼 record도 되고, 이 장의 ``Card``처럼 예문 목록을 다루는 메서드를 가진 클래스도 된다.
 둘째, SQL에 적은 테이블 하나에만 INSERT한다. 자식(예문)까지 함께 저장하지는 않으므로, 애그리거트 전체가 필요한 저장은 여전히 `insert`/``save``의 몫이다.
 
 === 파라미터 소스 확장

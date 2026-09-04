@@ -67,7 +67,7 @@ Kotlin에는 checked 예외가 없다.
 ``SQLException``을 던지는 Java 메서드를 호출해도 컴파일러가 try-catch나 `throws` 선언을 요구하지 않는다.
 2장에서 본 "catch 절에서 할 것이 없는데도 처리를 강요당하는" 문제를 Kotlin은 언어 차원에서 제거했다.
 Kotlin 공식 문서도 대규모 코드베이스에서 checked 예외가 생산성을 떨어뜨리고 오히려 예외를 삼키는 코드를 낳는다는 점을 이 설계의 근거로 든다.
-JDBC보다 뒤에 태어난 언어가 JDBC 시대의 교훈을 문법에 반영한 결과다.
+JDBC가 checked 예외로 설계된 뒤 Java 진영이 쌓은 이런 경험을, 뒤에 나온 언어가 문법에 반영한 결과라 볼 수 있다.
 
 그렇다고 Spring JDBC의 예외 번역이 Kotlin에서 덜 중요해지는 것은 아니다.
 checked냐 아니냐는 "처리를 강요당하는가"의 문제일 뿐이고, `DataAccessException` 계층의 본질은 DB마다 다른 에러 코드를 의미 있는 타입으로 바꿔 주는 번역에 있다.
@@ -140,7 +140,7 @@ include::{examples}/ch08-kotlin/src/test/kotlin/flashcard/kotlin/CardRepositoryT
 
 * *Spring Data JDBC와 data class*: 6장의 엔티티도 data class로 쓸 수 있다. `val` 프로퍼티와 `copy` 기반의 불변 모델이 Spring Data JDBC의 "저장 시점 상태 반영" 철학과 잘 맞는다.
 * *Spring JDBC Plus*: Kotlin을 공식 지원하며, `spring-data-jdbc-plus-sql-kotlin` 모듈이 Kotlin DSL을 제공한다. 7장의 SQL 클래스와 리포지토리 구현 패턴도 Kotlin에서 동일하게 쓸 수 있다.
-* *coroutine*: 이 책의 범위 밖이지만, JDBC는 블로킹 API이므로 coroutine에서 쓸 때는 ``Dispatchers.IO``로 감싸는 것이 관례다.
+* *coroutine*: 이 책의 범위 밖이지만, JDBC는 블로킹 API이므로 coroutine에서 쓸 때는 ``Dispatchers.IO``로 감싸는 것이 관례다. 3장에서 본 대로 트랜잭션은 스레드에 바인딩되므로, 트랜잭션 경계와 그 안의 DB 호출은 전부 같은 ``withContext`` 블록 안에 두어야 한다. 중간에 suspend되어 스레드가 바뀌면 그 뒤의 호출은 트랜잭션 밖에서 실행된다.
 
 === 다음으로
 

@@ -83,6 +83,9 @@ include::{examples}/ch05-boot-jdbc/src/main/resources/application.properties[tag
 === 저장소: 주입받는 템플릿
 
 Boot가 템플릿들을 빈으로 만들어 두었으므로, 저장소는 `DataSource` 대신 템플릿을 바로 주입받는다.
+2장에서는 저장소 생성자가 ``DataSource``를 받아 템플릿을 스스로 만들었는데, 여기서는 그 선택을 뒤집는다.
+Boot가 등록한 템플릿에는 ``spring.jdbc.template.fetch-size`` 같은 프로퍼티로 조정한 설정이 실려 있어, 저장소마다 템플릿을 새로 만들면 그 설정이 사라진다.
+2장의 논거는 조립을 손으로 할 때의 것이었고, 컨테이너가 조립을 맡는 환경에서는 공용 빈을 그대로 받는 쪽이 맞다.
 
 [source,java,indent=0]
 ----
@@ -229,6 +232,33 @@ include::{examples}/ch05-boot-jdbc/src/test/java/flashcard/boot/DeckRepositoryPo
 그렇다고 모든 테스트를 컨테이너로 돌리자는 뜻은 아니다.
 컨테이너 기동에는 초 단위의 시간이 들고 Docker가 있는 환경이 필요하다(``disabledWithoutDocker = true``는 Docker가 없으면 실패 대신 건너뛰게 한다).
 자주 도는 저장소 테스트는 기동이 빠른 H2로 돌리고, DB 방언을 타는 쿼리나 릴리스 전 검증처럼 정확성이 중요한 자리에 Testcontainers를 두는 조합이 실용적이다.
+
+컨테이너 테스트가 잡아 주는 차이를 하나 보고 가자.
+2장의 ``DuplicateKeyException`` 관용구를 두 DB에서 트랜잭션 안에 넣고 돌려 본다.
+``@JdbcTest``는 테스트마다 트랜잭션을 열어 주므로, 테스트 메서드 본문이 곧 트랜잭션 안이다.
+H2에서는 실패한 insert 뒤의 조회가 아무 일 없이 이어진다.
+
+[source,java,indent=0]
+----
+include::{examples}/ch05-boot-jdbc/src/test/java/flashcard/boot/DuplicateKeyIdiomH2Test.java[tag=h2]
+----
+
+같은 코드를 PostgreSQL 컨테이너에서 돌리면 마지막 조회가 거부된다.
+PostgreSQL은 트랜잭션 안에서 문장 하나가 실패하면 그 트랜잭션을 중단 상태로 만들고, 롤백하기 전까지 어떤 문장도 받지 않는다.
+
+[source,java,indent=0]
+----
+include::{examples}/ch05-boot-jdbc/src/test/java/flashcard/boot/DuplicateKeyIdiomPostgresTest.java[tag=postgres]
+----
+
+2장에서 예고한 대로, 실패할 수 있는 문장을 3장의 ``NESTED`` 전파로 감싸 저장점 안에서 실행하면 실패한 문장만 되돌아가고 바깥 트랜잭션은 계속 쓸 수 있다.
+
+[source,java,indent=0]
+----
+include::{examples}/ch05-boot-jdbc/src/test/java/flashcard/boot/DuplicateKeyIdiomPostgresTest.java[tag=nested]
+----
+
+H2만으로 테스트했다면 운영에서야 만났을 차이다.
 
 === 가상 스레드와 JDBC
 
