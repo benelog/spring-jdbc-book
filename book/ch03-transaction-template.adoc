@@ -58,9 +58,11 @@ CSV 가져오기에 해당하는 "덱과 카드를 한 번에 저장"은 이렇�
 include::{examples}/ch03-transaction-template/src/main/java/flashcard/tx/DeckService.java[tag=execute]
 ----
 
-``execute``에 넘긴 람다가 정상적으로 끝나면 커밋되고, unchecked 예외가 빠져나가면 롤백된다.
+``execute``에 넘긴 람다 표현식이 정상적으로 끝나면 커밋되고, unchecked 예외가 빠져나가면 롤백된다.
 1장의 ``DeckImporter``와 비교하면 try-catch-finally, commit, rollback, setAutoCommit이 전부 사라졌다.
-람다의 반환값은 ``execute``의 반환값이 되므로, 새로 만든 덱의 id를 그대로 돌려줄 수 있다.
+람다 표현식의 반환값은 ``execute``의 반환값이 되므로, 새로 만든 덱의 id를 그대로 돌려줄 수 있다.
+람다 표현식이 받는 `status` 인자는 진행 중인 트랜잭션을 나타내는 ``TransactionStatus``다.
+예외를 던지지 않고 롤백만 하고 싶을 때 ``status.setRollbackOnly()``를 부르는 용도이고, 그럴 일이 없으면 위 코드처럼 쓰지 않고 둔다.
 
 반환값이 필요 없다면 ``executeWithoutResult``를 쓴다.
 두 덱을 합치는 작업처럼 여러 변경을 묶을 때다.

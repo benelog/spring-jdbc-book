@@ -24,7 +24,7 @@ include::{examples}/ch05-boot-jdbc/build.gradle[tag=deps]
 * `spring-boot-h2console`: H2가 제공하는 웹 콘솔의 자동 설정. Spring Boot 4에서 별도 모듈로 분리되었다.
 
 테스트 의존성도 스타터로 정리된다.
-``spring-boot-starter-test``가 JUnit, AssertJ, Mockito 등 공통 도구를, ``-jdbc-test``와 ``-webmvc-test``가 각각 ``@JdbcTest``와 ``@WebMvcTest``/``MockMvc`` 같은 슬라이스 테스트 지원을 가져온다.
+``spring-boot-starter-test``가 JUnit, AssertJ, Mockito 등 공통 도구를, ``-jdbc-test``와 ``-webmvc-test``가 각각 ``@JdbcTest``와 ``@WebMvcTest``/``MockMvc`` 같은 슬라이스 테스트(전체 컨텍스트 대신 한 계층의 빈만 띄우는 테스트) 지원을 가져온다.
 앞 장들에서 JUnit과 AssertJ를 하나씩 선언하던 것도 스타터 하나로 흡수됐다.
 이 장의 후반에서 쓸 Testcontainers 의존성은 해당 절에서 따로 소개한다.
 
@@ -34,6 +34,16 @@ include::{examples}/ch05-boot-jdbc/build.gradle[tag=deps]
 ----
 include::{examples}/ch05-boot-jdbc/src/main/java/flashcard/boot/FlashcardApplication.java[tag=class]
 ----
+
+``@SpringBootApplication``은 4장에서 본 ``@Configuration``과 ``@ComponentScan``에, 자동 설정을 켜는 ``@EnableAutoConfiguration``을 합친 애너테이션이다.
+컴포넌트 스캔의 기준 패키지는 이 클래스의 패키지라서, 같은 패키지 아래의 `@Repository`, `@Service`, ``@Controller``는 따로 지정하지 않아도 빈이 된다.
+``SpringApplication.run``은 이 클래스를 설정으로 삼아 컨테이너를 만들고, 내장 톰캣까지 띄운다.
+
+자동 설정에는 알아 두어야 할 규칙이 하나 있다.
+*같은 타입의 빈을 개발자가 직접 등록하면 자동 설정은 그 빈을 만들지 않고 물러난다.*
+예를 들어 설정 클래스에 ``DataSource`` 빈을 직접 두면 Boot는 HikariCP 풀을 만들지 않는다.
+자동 설정은 어디까지나 기본값이고, 직접 등록한 빈이 언제나 우선한다.
+이 규칙은 이 장의 Testcontainers 절과 9장에서 다시 만난다.
 
 === 설정 파일: application.properties
 
@@ -80,7 +90,7 @@ include::{examples}/ch05-boot-jdbc/src/main/java/flashcard/boot/DeckRepository.j
 ----
 
 홈 화면에는 덱마다 카드 수를 보여 주고 싶다.
-덱별 카드 수는 조인과 집계가 필요한, 엔티티가 아닌 **조회 전용 모델**이다.
+덱별 카드 수는 조인과 집계가 필요한, 테이블 한 행을 그대로 옮긴 객체가 아닌 **조회 전용 모델**이다.
 이럴 때 Spring JDBC는 화면에 맞는 record를 만들고 SQL로 바로 채우면 된다.
 
 [source,java,indent=0]
@@ -98,7 +108,10 @@ include::{examples}/ch05-boot-jdbc/src/main/java/flashcard/boot/DeckRepository.j
 
 === 컨트롤러와 템플릿
 
-Spring MVC 컨트롤러는 요청을 받아 서비스에 위임하고, 모델을 채워 템플릿 이름을 돌려준다.
+Spring MVC 컨트롤러는 ``@Controller``가 붙은 빈이다.
+메서드에 붙은 ``@GetMapping("/")``이 "이 URL로 GET 요청이 오면 이 메서드를 호출하라"는 선언이다.
+메서드는 요청을 서비스에 위임하고, 그 결과를 ``Model``에 담은 뒤 템플릿 이름을 문자열로 돌려준다.
+``Model``에 담은 값은 템플릿에서 같은 이름으로 꺼내 쓴다.
 
 [source,java,indent=0]
 ----
@@ -119,6 +132,9 @@ include::{examples}/ch05-boot-jdbc/src/main/resources/templates/home.html[tag=ho
 ----
 include::{examples}/ch05-boot-jdbc/src/main/java/flashcard/boot/DeckController.java[tag=create]
 ----
+
+``@RequestParam``은 폼 필드나 쿼리 파라미터 값을, ``@PathVariable``은 ``/decks/{deckId}``처럼 URL 경로에 낀 값을 메서드 파라미터로 받는다.
+반환 문자열이 ``redirect:``로 시작하면 템플릿 이름이 아니라 리다이렉트할 URL로 해석된다.
 
 학습 화면은 데이터 액세스 관점에서는 새로울 것이 없어 흐름만 소개한다.
 몇 번째 카드를 어느 면으로 보는지는 쿼리 파라미터로만 관리하는, 상태 없는 가장 단순한 구현이다.
@@ -154,6 +170,8 @@ include::{examples}/ch05-boot-jdbc/src/test/java/flashcard/boot/DeckRepositoryTe
 문장이 많아지면 ``@Sql(scripts = "/deck-cards.sql")``처럼 파일로 빼는 편이 낫지만, 이 정도 분량은 코드에 직접 두면 준비한 데이터와 검증 조건이 한 화면에 보인다는 장점이 있다.
 
 웹 계층까지 포함한 흐름은 ``@SpringBootTest``와 ``MockMvc``로 확인한다.
+``@SpringBootTest``는 ``@SpringBootApplication`` 클래스를 찾아 운영과 같은 전체 컨텍스트를 띄운다.
+``MockMvc``는 톰캣을 띄우지 않고 요청 객체를 만들어 컨트롤러까지 호출해 주는 도구로, ``@AutoConfigureMockMvc``를 붙이면 빈으로 준비된다.
 운영 설정의 파일 DB 대신 메모리 DB를 쓰도록 프로퍼티만 덮어쓴다.
 
 [source,java,indent=0]
@@ -172,7 +190,7 @@ include::{examples}/ch05-boot-jdbc/src/test/java/flashcard/boot/FlashcardWebTest
 캐시 키에는 ``properties``로 덮어쓴 값도 들어간다.
 웹 테스트 클래스를 하나 더 만들면서 datasource URL만 ``jdbc:h2:mem:another``로 바꿔 적으면, 구성이 다르다고 판단되어 전체 테스트를 돌릴 때 전체 컨텍스트가 한 번 더 뜬다.
 이런 클래스가 늘수록 전체 테스트 시간이 컨텍스트 로딩으로 채워지므로, 프로퍼티 조합은 통째로 공유해야 한다.
-간단하게는 설정 문자열을 상수로 뽑아 함께 쓰고, 클래스가 많아지면 ``@SpringBootTest``와 프로퍼티를 묶은 메타 애너테이션을 만들어 붙인다.
+간단하게는 설정 문자열을 상수로 뽑아 함께 쓰고, 클래스가 많아지면 ``@SpringBootTest``와 프로퍼티를 묶은 메타 애너테이션(여러 애너테이션을 합쳐 만든 사용자 정의 애너테이션)을 만들어 붙인다.
 
 컨텍스트를 공유하면 그 안의 DB 상태도 공유된다는 점은 기억해 두자.
 ``@SpringBootTest``는 ``@JdbcTest``와 달리 테스트를 트랜잭션으로 감싸 주지 않는다.
@@ -202,7 +220,8 @@ include::{examples}/ch05-boot-jdbc/src/test/java/flashcard/boot/DeckRepositoryPo
 ----
 
 핵심은 ``@ServiceConnection``이다.
-컨테이너가 뜨면 Boot가 그 접속 정보(URL, 계정)를 읽어 ``DataSource``를 스스로 구성한다.
+컨테이너가 뜨면 Boot가 그 접속 정보(URL, 계정)를 담은 빈을 등록하고, ``DataSource`` 자동 설정은 프로퍼티보다 그 빈을 우선해 풀을 구성한다.
+이 장 첫머리에서 본 "직접 등록한 빈이 우선한다"는 규칙이 여기서도 작동한다.
 프로퍼티를 한 줄도 적지 않았는데 `spring.sql.init.mode=always` 설정 덕분에 ``schema.sql``까지 새 DB에 그대로 적용된다.
 ``@JdbcTest``의 "내장 DB로 바꿔치기"도 서비스 커넥션이 있으면 자동으로 비활성화되므로, H2 테스트와 같은 애너테이션 구성을 그대로 쓸 수 있다.
 `static` 필드에 ``@Container``를 붙였으므로 컨테이너는 클래스당 한 번만 뜨고, 트랜잭션 롤백 격리는 H2 때와 동일하게 동작한다.

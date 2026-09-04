@@ -185,7 +185,8 @@ include::{examples}/ch09-data-jdbc-deep/src/main/java/flashcard/deep/DataJdbcDee
 ----
 
 ``AbstractJdbcConfiguration``은 Spring Data JDBC의 기반 설정 클래스로, `userConverters` 같은 확장 지점을 열어 둔다.
-Spring Boot의 자동 설정도 내부적으로 이 클래스의 서브클래스라서, 우리가 서브클래스를 직접 두면 Boot의 자동 설정은 비활성화된다.
+Spring Boot의 자동 설정도 내부적으로 이 클래스의 서브클래스다.
+그래서 우리가 서브클래스를 직접 두면, 5장에서 본 "직접 등록한 빈이 우선한다"는 규칙에 따라 Boot의 자동 설정은 물러난다.
 
 여기서 6장의 슬라이스 테스트 주의점이 하나 더 늘어난다.
 ``@DataJdbcTest``는 일반 ``@Configuration`` 클래스를 컴포넌트 스캔에서 제외한다.

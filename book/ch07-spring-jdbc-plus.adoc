@@ -117,13 +117,17 @@ include::{examples}/ch07-jdbc-plus/src/main/java/flashcard/plus/repository/CardS
 include::{examples}/ch07-jdbc-plus/src/main/java/flashcard/plus/repository/CardSql.java[tag=select-often-wrong]
 ----
 
-*(3) 구현*: ``JdbcRepositorySupport``를 상속하고, Spring Data의 관례(인터페이스 이름 + `Impl`)에 따라 자동으로 조립된다.
+*(3) 구현*: ``JdbcRepositorySupport``를 상속하고 커스텀 인터페이스를 구현한다.
+Spring Data는 리포지토리 인터페이스가 상속한 인터페이스마다 "그 이름 + ``Impl``" 클래스를 찾아, 해당 메서드 호출을 그 클래스에 위임한다.
+``CardRepository``가 ``CardRepositoryCustom``을 상속하므로 ``findDue`` 호출은 ``CardRepositoryImpl``로 넘어간다.
+구현 클래스는 빈으로 직접 등록하지 않아도 되고, 생성자는 Plus가 빈으로 제공하는 ``EntityJdbcProvider``를 받아 엔티티 타입과 함께 상위 클래스에 넘긴다.
 
 [source,java,indent=0]
 ----
 include::{examples}/ch07-jdbc-plus/src/main/java/flashcard/plus/repository/CardRepositoryImpl.java[tag=find-due]
 ----
 
+`sqls` 필드는 생성자에서 ``sqls(CardSql::new)``로 만들어 둔 SQL 클래스의 인스턴스이고, ``mapParameterSource()``는 이름 있는 파라미터를 담을 ``MapSqlParameterSource``를 새로 만들어 주는 상위 클래스의 도우미다.
 ``find``는 목록, ``findOne``은 `Optional`, ``requiredOne``은 없으면 예외.
 집계 값 하나는 ``SingleValueSelectTrait``의 ``selectSingleValue``로 받는다.
 결과를 ``Card``로 바꾸는 매핑은 상위 클래스가 엔티티 정의를 보고 처리하므로 ``RowMapper``를 쓸 일이 없다.

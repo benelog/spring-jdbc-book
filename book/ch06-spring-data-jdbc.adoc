@@ -5,6 +5,12 @@
 Spring Data JDBC는 이 뻔한 부분을 인터페이스 선언만으로 만들어 주면서도, JPA 같은 기계 장치(영속성 컨텍스트, 지연 로딩, 변경 감지)는 들이지 않는다.
 "ORM의 편의 중 단순한 것만, Spring JDBC의 투명함은 그대로"가 이 기술의 설계 철학이다.
 
+용어 둘을 정리하고 시작한다.
+*엔티티*(entity)는 테이블의 한 행과 대응하는 저장 모델 객체다.
+2장부터 쓴 ``Card`` record가 이미 그 역할이었고, 이 장부터는 애너테이션으로 테이블과의 대응을 선언한다.
+*리포지토리*(repository)는 엔티티를 저장하고 조회하는 객체다.
+앞 장들에서 "저장소"라 부르며 직접 만들던 클래스와 역할이 같은데, 이 책은 직접 만든 클래스를 저장소, Spring Data가 인터페이스 선언에서 만들어 주는 것을 리포지토리로 구분해 부른다.
+
 예제 모듈은 ``examples/ch06-data-jdbc``다.
 
 [source,groovy,indent=0]
@@ -32,6 +38,9 @@ include::{examples}/ch06-data-jdbc/src/main/java/flashcard/datajdbc/Deck.java[ta
 include::{examples}/ch06-data-jdbc/src/main/java/flashcard/datajdbc/Card.java[tag=class]
 ----
 
+``@Table``이 대응하는 테이블을, ``@Id``가 기본 키 필드를 지정한다.
+나머지 필드는 필드 이름에서 유도한 칼럼 이름으로 짝지어지므로 애너테이션이 없다.
+유도 규칙은 이 장 뒷부분의 식별자 인용 절에서 다룬다.
 ``@MappedCollection``이 "덱 하나에 카드 여러 장"을 표현한다.
 `cards` 테이블의 `deck_id` 칼럼이 소속을, `card_index` 칼럼이 리스트 안의 순서를 담는다.
 카드 쪽에는 이 두 칼럼에 해당하는 필드가 아예 없다는 점이 인상적이다.
@@ -56,12 +65,16 @@ image::ch06-erd.png[6장 스키마 ERD,640]
 include::{examples}/ch06-data-jdbc/src/main/java/flashcard/datajdbc/DeckRepository.java[tag=class]
 ----
 
+구현 클래스는 어디에도 없다.
+Spring Data가 애플리케이션이 뜰 때 이 인터페이스를 구현하는 프록시를 만들어 빈으로 등록하고, 서비스는 4장의 ``@Transactional`` 프록시처럼 그 빈을 주입받아 쓴다.
+타입 인자 ``<Deck, Long>``은 이 리포지토리가 다루는 엔티티와 그 id의 타입이다.
+
 ``ListCrudRepository``를 상속하는 것만으로 `save`, `findById`, `findAll`, `deleteById` 등이 생긴다.
 여기에 세 가지 방식의 조회가 공존한다.
 
 1. *상속받은 CRUD*: 구현 없이 제공.
 2. *메서드 이름 파생 쿼리*: ``findByNameContaining``처럼 이름 규칙으로 쿼리를 생성.
-3. *`@Query`*: 복잡한 조회는 SQL을 직접. 2장에서 배운 이름 있는 파라미터가 그대로 쓰인다.
+3. *`@Query`*: 복잡한 조회는 SQL을 직접. 2장에서 배운 이름 있는 파라미터가 그대로 쓰이고, SQL의 ``:deckId``는 ``@Param("deckId")``가 붙은 메서드 파라미터와 짝지어진다.
 
 ``findAllSummaries``처럼 엔티티가 아닌 record(`DeckSummary`)를 돌려주는 조회 전용 쿼리도 ``@Query``로 자연스럽게 처리된다.
 "기본은 자동, 복잡한 것은 SQL"이라는 균형이 Spring Data JDBC를 쓰는 감각이다.
@@ -74,6 +87,9 @@ include::{examples}/ch06-data-jdbc/src/main/java/flashcard/datajdbc/DeckReposito
 ----
 include::{examples}/ch06-data-jdbc/src/test/java/flashcard/datajdbc/DeckRepositoryTest.java[tag=aggregate-save]
 ----
+
+``save``는 저장된 엔티티를 돌려준다.
+새 덱이라면 DB가 채번한 id가 채워진 객체가 돌아오므로, 테스트는 그 반환값의 id로 다시 조회한다.
 
 카드를 리스트에서 빼고 저장하면 그 카드의 행이 지워진다.
 JPA처럼 "변경을 감지"하는 것이 아니라, 저장 시점의 애그리거트 상태를 DB에 그대로 반영하는 단순한 규칙이다.
@@ -180,7 +196,7 @@ include::{examples}/ch06-data-jdbc/src/test/java/flashcard/datajdbc/DeckReposito
 ----
 
 한 가지 주의점.
-슬라이스 테스트도 `@SpringBootApplication` 클래스를 설정의 뿌리로 쓰며 `CommandLineRunner` 빈까지 실행한다.
+슬라이스 테스트도 `@SpringBootApplication` 클래스를 설정의 뿌리로 쓰며, 앱이 뜬 직후 실행되도록 등록한 `CommandLineRunner` 빈까지 실행한다.
 애플리케이션 클래스에 데모용 러너를 두면 테스트마다 데모 데이터가 들어가는 사고가 난다.
 이 모듈의 실행 예제(`DataJdbcQuickTour`)가 러너 대신 `main` 안에서 컨텍스트를 직접 다루는 이유다.
 

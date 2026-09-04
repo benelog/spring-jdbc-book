@@ -96,7 +96,7 @@ include::{examples}/ch08-kotlin/src/main/kotlin/flashcard/kotlin/CardRepository.
 include::{examples}/ch08-kotlin/src/main/kotlin/flashcard/kotlin/CardRepository.kt[tag=operator]
 ----
 
-``RowMapper``처럼 마지막 인자가 함수형 인터페이스인 API는 후행 람다 문법으로 간결하게 호출할 수 있다.
+``RowMapper``처럼 마지막 인자가 함수형 인터페이스인 API는 람다 표현식을 괄호 밖에 두는 후행 람다(trailing lambda) 문법으로 간결하게 호출할 수 있다.
 
 [source,kotlin,indent=0]
 ----
