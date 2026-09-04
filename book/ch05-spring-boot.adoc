@@ -45,6 +45,9 @@ include::{examples}/ch05-boot-jdbc/src/main/java/flashcard/boot/FlashcardApplica
 자동 설정은 어디까지나 기본값이고, 직접 등록한 빈이 언제나 우선한다.
 이 규칙은 이 장의 Testcontainers 절과 9장에서 다시 만난다.
 
+.spring-boot-starter-jdbc 자동 설정: 클래스패스와 프로퍼티를 보고 4장의 조립을 대신하되, 직접 등록한 빈이 있으면 물러난다
+image::ch05-autoconfig.png[자동 설정 흐름,880]
+
 === 설정 파일: application.properties
 
 4장까지 Java 코드로 하던 설정이 프로퍼티로 옮겨 간다.
@@ -286,6 +289,9 @@ include::{examples}/ch05-boot-jdbc/src/main/resources/application.properties[tag
 예전에는 톰캣 스레드 200개가 동시 요청 수를 제한하는 역할을 겸했지만, 그 제한이 사라지면 몰려든 요청이 전부 커넥션 풀 앞에 줄을 서고, 풀의 대기 시간 초과(connection timeout) 오류가 새로운 첫 번째 병목으로 드러난다.
 가상 스레드를 켠 뒤에는 풀 크기와 대기 시간 설정을 부하에 맞게 다시 살펴야 하고, "트랜잭션 안에서 느린 외부 호출을 하지 않는다"는 4장의 원칙은 오히려 더 중요해진다.
 커넥션을 오래 붙드는 코드의 비용은 스레드가 아무리 많아져도 사라지지 않기 때문이다.
+
+.가상 스레드를 켜면 병목이 톰캣 스레드에서 커넥션 풀로 옮겨 간다
+image::ch05-virtual-threads.png[가상 스레드와 커넥션 병목,760]
 
 === 정리
 

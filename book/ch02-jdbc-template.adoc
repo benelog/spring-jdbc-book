@@ -91,6 +91,9 @@ include::{examples}/ch02-jdbc-template/src/main/java/flashcard/template/DeckRepo
 커넥션, 문장, 결과 집합, 반복문, 예외 처리가 전부 사라지고 SQL과 매핑만 남았다.
 `while (resultSet.next())` 루프는 템플릿이 대신 돌려 주므로, ``RowMapper``는 정말로 "한 행"만 생각하면 된다.
 
+.템플릿 콜백 패턴: 정해진 절차는 JdbcTemplate이, 그때그때 달라지는 세 가지는 호출하는 쪽이 맡는다
+image::ch02-template-callback.png[템플릿 콜백 패턴,800]
+
 값 하나만 필요한 집계 조회는 ``queryForObject``에 원하는 타입을 알려 준다.
 
 [source,java,indent=0]
@@ -147,6 +150,9 @@ Hibernate도 3.0부터 checked 예외를 버렸고, 그 경험 위에서 표준�
 표준 체계로 부족한 DB를 위해서는 벤더별 에러 코드 대응표를 담은 `sql-error-codes.xml` 파일이 ``spring-jdbc``에 들어 있는데, 같은 이름의 파일을 클래스패스 루트에 두면 이 대응표를 읽는 번역기가 우선 적용되어 번역 규칙을 고치거나 보탤 수 있다.
 직접 만든 번역기를 ``JdbcTemplate``의 ``setExceptionTranslator``로 끼워 넣는 방법도 있다.
 어느 경우든 저장소를 호출하는 쪽 코드는 달라지지 않는다.
+
+.예외 번역: DB마다 다른 에러 코드가 SQLExceptionTranslator를 거쳐 의미 있는 unchecked 예외 타입이 된다
+image::ch02-exception-translation.png[예외 번역 흐름,880]
 
 ==== 잡아서 쓸모 있게: DuplicateKeyException
 
@@ -308,6 +314,9 @@ include::{examples}/ch02-jdbc-template/src/main/java/flashcard/template/CardRepo
 
 정리하면 이렇게 고른다.
 한 행이 객체 하나면 ``RowMapper``, 여러 행이 객체 하나면 ``ResultSetExtractor``, 객체로 만들 것 없이 행마다 처리만 하면 ``RowCallbackHandler``.
+
+.조회 콜백 3형제: 같은 ResultSet을 무엇으로 바꾸느냐가 다르다
+image::ch02-query-callbacks.png[조회 콜백 3형제,840]
 
 === 배치: batchUpdate
 

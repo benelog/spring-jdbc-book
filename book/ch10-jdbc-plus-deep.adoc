@@ -115,6 +115,9 @@ include::{examples}/ch10-jdbc-plus-deep/src/test/java/flashcard/plusdeep/reposit
 예문 칼럼으로 행을 거르면 조건에 걸린 예문만 남은 "부분 애그리거트"가 조립된다.
 JPA의 fetch join에서도 똑같이 만나는, 조인 기반 애그리거트 조회의 본질적인 제약이다.
 
+.조인 결과 조립: 한 카드가 예문 수만큼 반복된 행을 AggregateResultSetExtractor가 카드 하나로 모은다
+image::ch10-aggregate-join.png[조인 결과를 애그리거트로 조립,880]
+
 === saveBatch: 대량 저장
 
 2장과 3장에서는 ``batchUpdate``로 묶어 보냈던 카드 저장을, 4장과 7장의 CSV 가져오기는 트랜잭션 경계에 집중하느라 한 장씩 INSERT했다.
