@@ -17,14 +17,15 @@ include::{examples}/ch10-jdbc-plus-deep/build.gradle[tag=deps]
 include::{examples}/ch10-jdbc-plus-deep/src/main/resources/schema.sql[tag=schema]
 ----
 
-덱에는 `deleted` 칼럼이, 카드에는 예문(card_example) 테이블이 붙었다.
-각각 soft delete와 애그리거트 조회의 재료다.
+덱에는 `deleted` 칼럼이, 카드에는 예문(card_example) 테이블이 추가됐다.
+각각 soft delete와 애그리거트 조회 예제에 쓴다.
 
 === Soft delete: 삭제를 UPDATE로
 
 사용자가 덱을 지웠다가 "아차" 하는 일은 반드시 생긴다.
 행을 정말 지우는 대신 "지워졌음" 표시만 해 두면 복원이 가능해진다.
-이른바 soft delete인데, 직접 구현하면 삭제 코드를 전부 UPDATE로 바꿔 써야 하는 성가신 패턴이다.
+이 방식을 soft delete라고 한다.
+직접 구현하면 삭제 코드를 전부 UPDATE로 바꿔 써야 해서 성가시다.
 Plus는 이를 애너테이션 하나로 처리한다.
 
 [source,java,indent=0]
@@ -44,7 +45,8 @@ include::{examples}/ch10-jdbc-plus-deep/src/test/java/flashcard/plusdeep/reposit
 
 주의할 점이 하나 있다. 위 테스트에서 보듯 *조회는 자동으로 걸러 주지 않는다.*
 `findById`, `findAll`, ``count``는 지워진 행을 여전히 돌려준다.
-"휴지통을 제외한 목록"과 "휴지통 목록"은 조회 조건으로 직접 표현해야 하며, 이는 Plus의 SQL 클래스가 하던 일 그대로다.
+"휴지통을 제외한 목록"과 "휴지통 목록"은 조회 조건으로 직접 표현해야 한다.
+7장에서 SQL 클래스에 조회 조건을 적던 방식 그대로다.
 
 [source,java,indent=0]
 ----
@@ -64,11 +66,12 @@ include::{examples}/ch10-jdbc-plus-deep/src/main/java/flashcard/plusdeep/reposit
 include::{examples}/ch10-jdbc-plus-deep/src/test/java/flashcard/plusdeep/repository/SoftDeleteTest.java[tag=trash]
 ----
 
-soft delete를 도입하면 모든 조회에 `deleted = false` 조건이 따라붙게 되므로, 이 예제처럼 `findActive` 같은 이름으로 조회 메서드를 모아 두는 것이 조건 누락을 막는 실전 요령이다.
+soft delete를 도입하면 모든 조회에 `deleted = false` 조건이 필요해진다.
+이 예제처럼 `findActive` 같은 이름으로 조회 메서드를 모아 두면 조건을 빠뜨리는 실수를 막을 수 있다.
 
 === 애그리거트를 쿼리 한 번으로: aggregateColumns
 
-이 장의 카드는 예문 여러 개를 거느린 애그리거트다.
+이 장의 카드는 예문 여러 개를 포함하는 애그리거트다.
 
 [source,java,indent=0]
 ----
@@ -81,16 +84,18 @@ include::{examples}/ch10-jdbc-plus-deep/src/main/java/flashcard/plusdeep/domain/
 ----
 
 표준 Spring Data JDBC는 기본 설정에서 이런 애그리거트를 조회할 때 루트와 자식을 각각의 쿼리로 읽는다.
-카드 목록 화면처럼 루트가 여럿인 조회에서는 쿼리 수가 늘어나는 부담이 있다.
-표준에도 ``JdbcMappingContext``의 ``setSingleQueryLoadingEnabled``로 조인 한 번에 읽는 방식을 켜는 선택지가 있지만, `findAll`, ``findById`` 같은 기본 조회에만 적용되고 직접 쓴 SQL에는 미치지 않는다.
-Plus의 `aggregateColumns`/``aggregateTables``는 그 조인 한 번 읽기를 커스텀 SQL에서 쓸 수 있게 해 준다.
+카드 목록 화면처럼 루트가 여럿인 조회에서는 쿼리 수가 늘어난다.
+예를 들어 카드 100장을 읽으면 예문을 읽는 쿼리가 카드마다 한 번씩 더 나간다.
+표준에도 ``JdbcMappingContext``의 ``setSingleQueryLoadingEnabled``로 조인 한 번에 읽는 방식을 켤 수 있다.
+다만 이 설정은 `findAll`, ``findById`` 같은 기본 조회에만 적용되고, 직접 쓴 SQL에는 적용되지 않는다.
+Plus의 `aggregateColumns`/``aggregateTables``를 쓰면 커스텀 SQL에서도 조인 한 번으로 애그리거트를 읽을 수 있다.
 
 [source,java,indent=0]
 ----
 include::{examples}/ch10-jdbc-plus-deep/src/main/java/flashcard/plusdeep/repository/CardSql.java[tag=aggregate]
 ----
 
-생성되는 조각을 눈으로 확인해 보면 구조가 분명해진다.
+생성되는 SQL 조각을 눈으로 확인해 보면 구조가 분명해진다.
 
 [source,java,indent=0]
 ----
@@ -113,15 +118,16 @@ include::{examples}/ch10-jdbc-plus-deep/src/test/java/flashcard/plusdeep/reposit
 
 한 가지 함정은 WHERE 조건을 *루트 칼럼에만* 걸어야 한다는 것이다.
 예문 칼럼으로 행을 거르면 조건에 걸린 예문만 남은 "부분 애그리거트"가 조립된다.
-JPA의 fetch join에서도 똑같이 만나는, 조인 기반 애그리거트 조회의 본질적인 제약이다.
+JPA의 fetch join에도 똑같이 있는, 조인 기반 애그리거트 조회의 본질적인 제약이다.
 
 .조인 결과 조립: 한 카드가 예문 수만큼 반복된 행을 AggregateResultSetExtractor가 카드 하나로 모은다
 image::ch10-aggregate-join.png[조인 결과를 애그리거트로 조립,880]
 
 === saveBatch: 대량 저장
 
-2장과 3장에서는 ``batchUpdate``로 묶어 보냈던 카드 저장을, 4장과 7장의 CSV 가져오기는 트랜잭션 경계에 집중하느라 한 장씩 INSERT했다.
-수백 장쯤은 문제없지만, 수만 장이 되면 왕복 횟수가 병목이 된다.
+2장과 3장에서는 카드 저장을 ``batchUpdate``로 묶어 보냈다.
+반면 4장과 7장의 CSV 가져오기는 트랜잭션 경계에 집중하느라 카드를 한 장씩 INSERT했다.
+수백 장쯤은 문제없지만, 수만 장이 되면 DB와 주고받는 왕복 횟수가 병목이 된다.
 ``JdbcRepositorySupport``의 ``saveBatch``는 2장에서 본 JDBC 배치를 Plus 스타일로 감싼 것이다.
 
 [source,java,indent=0]
@@ -139,21 +145,23 @@ include::{examples}/ch10-jdbc-plus-deep/src/main/java/flashcard/plusdeep/reposit
 include::{examples}/ch10-jdbc-plus-deep/src/test/java/flashcard/plusdeep/repository/CardRepositoryTest.java[tag=batch]
 ----
 
-INSERT 문장 하나에 파라미터 100벌이 배치로 실려 나간다.
-알아 둘 점 두 가지.
+INSERT 문장 하나와 파라미터 100벌이 배치 한 번으로 전송된다.
+알아 둘 점이 두 가지 있다.
 첫째, ``saveBatch``는 엔티티 하나하나를 2장의 ``BeanPropertySqlParameterSource``와 같은 방식의 파라미터 소스로 바꿔 SQL의 이름 있는 파라미터에 연결한다.
-2장에서처럼 record도 되고, 이 장의 ``Card``처럼 예문 목록을 다루는 메서드를 가진 클래스도 된다.
-둘째, SQL에 적은 테이블 하나에만 INSERT한다. 자식(예문)까지 함께 저장하지는 않으므로, 애그리거트 전체가 필요한 저장은 여전히 `insert`/``save``의 몫이다.
+2장에서처럼 record도 되고, 이 장의 ``Card``처럼 예문 목록을 다루는 메서드가 있는 클래스도 된다.
+둘째, SQL에 적은 테이블 하나에만 INSERT한다.
+자식(예문)까지 함께 저장하지는 않으므로, 애그리거트 전체가 필요한 저장은 여전히 `insert`/``save``의 몫이다.
 
 === 파라미터 소스 확장
 
-Plus의 바탕 모듈(`spring-jdbc-plus-support`)에는 ``NamedParameterJdbcTemplate``에서 쓰는 파라미터 소스 개선이 몇 가지 있다.
+Plus의 기반 모듈(`spring-jdbc-plus-support`)에는 ``NamedParameterJdbcTemplate``에서 쓰는 파라미터 소스 개선이 몇 가지 있다.
 리포지토리 없이도 쓸 수 있는 독립 도구들이다.
 
 ==== IN 절 패딩
 
-`where id in (:ids)` 쿼리는 컬렉션 크기마다 다른 SQL 문장(`in (?)`, `in (?, ?)`, ...)이 되어, DB의 실행 계획 캐시를 크기별로 하나씩 차지한다.
-패딩을 켜면 컬렉션이 정해진 경계 크기로 늘어나 문장 종류가 몇 가지로 수렴한다.
+`where id in (:ids)` 쿼리는 컬렉션 크기마다 다른 SQL 문장(`in (?)`, `in (?, ?)`, ...)이 된다.
+그래서 DB의 실행 계획 캐시에 크기별로 항목이 하나씩 생긴다.
+패딩을 켜면 컬렉션이 정해진 경계 크기까지 채워지므로 문장 종류가 몇 가지로 줄어든다.
 
 [source,java,indent=0]
 ----
@@ -163,7 +171,7 @@ include::{examples}/ch10-jdbc-plus-deep/src/test/java/flashcard/plusdeep/reposit
 ==== 타입 변환기와 소스 결합
 
 SQL 파라미터로 넘기기 전에 값을 변환하는 규칙도 등록할 수 있다.
-9장의 컨버터가 엔티티 매핑에 대한 것이라면, 이쪽은 쿼리 파라미터에 대한 것이다.
+9장의 컨버터가 엔티티 필드와 칼럼 사이의 변환을 맡는다면, 이쪽은 쿼리 파라미터의 변환을 맡는다.
 
 [source,java,indent=0]
 ----
@@ -180,8 +188,8 @@ include::{examples}/ch10-jdbc-plus-deep/src/test/java/flashcard/plusdeep/reposit
 
 === JdbcRepository가 상속해 주는 조회들
 
-7장에서는 ``JdbcRepository``의 `insert`/`update` 분리만 조명했는데, 이 인터페이스는 Spring Data의 조회 인터페이스도 여럿 상속한다.
-따로 선언 없이 바로 쓸 수 있는 세 가지를 보자.
+7장에서는 ``JdbcRepository``의 `insert`/`update` 분리만 다뤘는데, 이 인터페이스는 Spring Data의 조회 인터페이스도 여럿 상속한다.
+따로 선언하지 않아도 바로 쓸 수 있는 세 가지를 보자.
 
 페이징은 9장에서 본 그대로다.
 
@@ -191,7 +199,7 @@ include::{examples}/ch10-jdbc-plus-deep/src/test/java/flashcard/plusdeep/reposit
 ----
 
 Query by Example은 "이렇게 생긴 카드를 찾아 달라"고 견본 객체로 묻는 방식이다.
-검색 폼처럼 조건 조합이 유동적인 화면에서 SQL 분기를 줄여 준다.
+검색 폼처럼 입력한 항목에 따라 조건 조합이 달라지는 화면에서 조건마다 SQL을 분기하는 코드를 줄일 수 있다.
 
 [source,java,indent=0]
 ----
@@ -207,7 +215,8 @@ include::{examples}/ch10-jdbc-plus-deep/src/test/java/flashcard/plusdeep/reposit
 ----
 
 스트림은 소비가 끝날 때까지 커넥션을 열어 두므로 try-with-resources와 트랜잭션 안에서 써야 한다.
-그리고 이 책의 일관된 관점 하나. Example과 Criteria는 편리하지만, 조건이 복잡해지면 이 API만으로는 표현할 수 없는 경우가 금세 나온다.
+여기서 이 책이 줄곧 지켜 온 관점을 다시 적어 둔다.
+Example과 Criteria는 편리하지만, 조건이 복잡해지면 이 API만으로는 표현할 수 없는 경우가 금세 나온다.
 그때가 SQL 클래스로 내려갈 때다.
 
 === JdbcDaoSupport: 엔티티 없는 조회 전용 클래스
@@ -225,18 +234,19 @@ include::{examples}/ch10-jdbc-plus-deep/src/main/java/flashcard/plusdeep/reposit
 include::{examples}/ch10-jdbc-plus-deep/src/test/java/flashcard/plusdeep/repository/DeckStatsDaoTest.java[tag=dao]
 ----
 
-7장에서 통계 조회를 리포지토리 구현(`ReviewLogRepositoryImpl`)에 두었던 것과 비교해 보면, 어느 쪽이든 같은 도구가 쓰인다.
-엔티티와 연이 있으면 리포지토리로, 없으면 DAO로. 어디에 두느냐의 문제일 뿐이다.
+7장에서는 통계 조회를 리포지토리 구현(`ReviewLogRepositoryImpl`)에 두었다.
+두 방식 모두 ``mapParameterSource``로 파라미터를 만들고 `find`/`select` 계열 메서드로 SQL을 실행한다는 점은 같다.
+특정 엔티티와 관련된 조회는 리포지토리에, 그렇지 않은 조회는 DAO에 둔다. 차이는 코드를 어디에 두느냐뿐이다.
 
 === 여기서 다루지 않은 것
 
 Plus에는 이 밖에도 몇 가지가 더 있다.
 커스텀 SQL에서 테이블 별칭을 제어하는 ``@SqlTableAlias``, 칼럼을 SQL 함수 표현식으로 읽는 ``@SqlFunction``, 그리고 `JdbcReactiveTemplate` 같은 리액티브 지원이다.
-필요해졌을 때 공식 저장소(github.com/naver/spring-jdbc-plus)의 문서와 테스트 코드를 보면 이 장의 연장선에서 어렵지 않게 읽을 수 있을 것이다.
+필요해졌을 때 https://github.com/naver/spring-jdbc-plus[공식 저장소]의 문서와 테스트 코드를 보면, 이 장에서 익힌 내용을 바탕으로 어렵지 않게 읽을 수 있다.
 
 === 정리
 
-이 장의 기능들도 결국 7장의 철학을 반복한다.
+이 장의 기능들도 7장과 같은 원칙을 따른다.
 자동화가 어울리는 곳(삭제 표시, 배치 파라미터, 조인 SQL 생성)은 자동화하되, SQL이 보여야 하는 곳에서는 SQL을 감추지 않는다.
 soft delete가 조회 조건을 대신 걸어 주지 않는 것도, 애그리거트 조회가 결국 눈에 보이는 조인 SQL인 것도 같은 태도다.
 

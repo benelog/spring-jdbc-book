@@ -12,8 +12,10 @@ Spring Framework는 Kotlin을 공식 지원하며, 이 책에서 배운 모든 �
 include::{examples}/ch08-kotlin/build.gradle[]
 ----
 
-* `kotlin-reflect`: ``DataClassRowMapper``와 ``BeanPropertySqlParameterSource``가 Kotlin 클래스의 생성자·프로퍼티를 들여다볼 때 필요하다.
-* `org.jetbrains.kotlin.plugin.spring`: Kotlin 클래스는 기본이 ``final``이라 4장에서 배운 상속 기반 프록시를 만들 수 없다. 이 플러그인이 `@Service`, `@Transactional` 등이 붙은 클래스를 자동으로 ``open``으로 바꿔 ``@Transactional``이 정상 동작하게 한다. Kotlin + Spring 프로젝트라면 빼놓지 않고 쓰는 플러그인이다.
+* `kotlin-reflect`: ``DataClassRowMapper``와 ``BeanPropertySqlParameterSource``가 Kotlin 클래스의 생성자·프로퍼티 정보를 리플렉션으로 읽을 때 필요하다.
+* `org.jetbrains.kotlin.plugin.spring`: Kotlin 클래스는 기본이 ``final``이라 4장에서 배운 상속 기반 프록시를 만들 수 없다.
+이 플러그인이 `@Service`, `@Transactional` 등이 붙은 클래스를 자동으로 ``open``으로 바꿔 주므로 ``@Transactional``이 정상 동작한다.
+Kotlin + Spring 프로젝트라면 빼놓지 않고 쓰는 플러그인이다.
 
 === data class: record의 자리에는
 
@@ -25,7 +27,8 @@ include::{examples}/ch08-kotlin/src/main/kotlin/flashcard/kotlin/Card.kt[tag=cla
 ----
 
 record보다 나은 점이 둘 있다.
-기본값 덕분에 "id 없는 새 카드"를 별도 팩터리 메서드 없이 ``Card(deckId = 1, text = "...", meaning = "...")``처럼 만들 수 있고, ``copy``가 "일부만 바꾼 복사본" 패턴을 대신한다.
+기본값 덕분에 "id 없는 새 카드"를 별도 팩터리 메서드 없이 ``Card(deckId = 1, text = "...", meaning = "...")``처럼 만들 수 있다.
+또 ``copy``가 "일부만 바꾼 복사본" 패턴을 대신한다.
 insert 후 채번된 id를 채워 돌려주는 코드가 한 줄이 된다.
 
 [source,kotlin,indent=0]
@@ -38,7 +41,7 @@ include::{examples}/ch08-kotlin/src/main/kotlin/flashcard/kotlin/CardRepository.
 === SQL 담기: 트리플 쿼트와 object
 
 Java의 텍스트 블록에 해당하는 것이 트리플 쿼트 문자열이다.
-SQL 상수를 모아 두는 자리로는 인스턴스가 하나뿐인 `object` 선언이 어울린다.
+SQL 상수를 모아 두는 곳으로는 인스턴스가 하나뿐인 `object` 선언이 어울린다.
 
 [source,kotlin,indent=0]
 ----
@@ -46,43 +49,47 @@ include::{examples}/ch08-kotlin/src/main/kotlin/flashcard/kotlin/CardSqls.kt[tag
 ----
 
 동적 SQL 조립에는 ``buildString``이 `StringBuilder` 상용구를 줄여 준다.
-과거 Java 프로젝트에서 멀티라인 SQL을 위해 Groovy를 섞어 쓰던 기법이 있었는데, 텍스트 블록이 생긴 지금의 Java나 Kotlin에서는 언어 하나로 해결된다.
+과거 Java 프로젝트에서는 멀티라인 SQL을 쓰려고 Groovy를 섞어 쓰기도 했다.
+텍스트 블록이 생긴 지금의 Java나 Kotlin에서는 언어 하나로 해결된다.
 
 === nullable 타입: Optional의 자리에는
 
 "없을 수도 있는 결과"를 Kotlin은 타입으로 표현한다.
-``queryForObject``의 예외를 잡는 대신, 목록 조회에 ``firstOrNull()``을 조합하는 관용구가 깔끔하다.
+``queryForObject``가 결과가 없을 때 던지는 ``EmptyResultDataAccessException``을 잡는 대신, 목록 조회에 ``firstOrNull()``을 조합하는 관용구가 깔끔하다.
 
 [source,kotlin,indent=0]
 ----
 include::{examples}/ch08-kotlin/src/main/kotlin/flashcard/kotlin/CardRepository.kt[tag=find]
 ----
 
-호출하는 쪽은 ``cards.findById(1)?.text ?: "없음"``처럼 안전 호출과 엘비스 연산자로 잇는다.
-컴파일러가 null 처리를 강제하므로, Java에서 ``Optional``에서 값을 꺼내 쓰다 나는 실수가 컴파일 오류로 잡힌다.
+호출하는 쪽은 ``cards.findById(1)?.text ?: "없음"``처럼 안전 호출(`?.`)과 엘비스 연산자(`?:`)로 처리한다.
+컴파일러가 null 처리를 강제하므로, Java에서 ``Optional``을 확인하지 않고 ``get()``으로 값을 꺼내다 나는 실수가 컴파일 오류로 잡힌다.
 
 === checked 예외가 없는 언어에서의 예외 처리
 
 Kotlin에는 checked 예외가 없다.
 ``SQLException``을 던지는 Java 메서드를 호출해도 컴파일러가 try-catch나 `throws` 선언을 요구하지 않는다.
-2장에서 본 "catch 절에서 할 것이 없는데도 처리를 강요당하는" 문제를 Kotlin은 언어 차원에서 제거했다.
-Kotlin 공식 문서도 대규모 코드베이스에서 checked 예외가 생산성을 떨어뜨리고 오히려 예외를 삼키는 코드를 낳는다는 점을 이 설계의 근거로 든다.
+2장에서 본 "catch 절에서 할 것이 없는데도 처리를 강요당하는" 문제를 Kotlin은 언어 차원에서 없앴다.
+Kotlin 공식 문서도 이 설계의 근거를 든다.
+대규모 코드베이스에서 checked 예외는 생산성을 떨어뜨리고, 빈 catch 블록으로 예외를 삼키는 코드를 오히려 늘린다는 것이다.
 JDBC가 checked 예외로 설계된 뒤 Java 진영이 쌓은 이런 경험을, 뒤에 나온 언어가 문법에 반영한 결과라 볼 수 있다.
 
 그렇다고 Spring JDBC의 예외 번역이 Kotlin에서 덜 중요해지는 것은 아니다.
-checked냐 아니냐는 "처리를 강요당하는가"의 문제일 뿐이고, `DataAccessException` 계층의 본질은 DB마다 다른 에러 코드를 의미 있는 타입으로 바꿔 주는 번역에 있다.
-Kotlin에서 순수 JDBC를 직접 쓰면 처리 강요는 사라지지만 ``SQLException`` 하나로 뭉뚱그려진 타입은 그대로다.
+checked냐 아니냐는 "처리를 강요당하는가"의 문제일 뿐이다.
+`DataAccessException` 계층의 본질은 DB마다 다른 에러 코드를 의미 있는 타입으로 바꿔 주는 번역에 있다.
+Kotlin에서 순수 JDBC를 직접 쓰면 처리를 강요당하지는 않는다.
+하지만 DB 오류가 종류와 관계없이 ``SQLException`` 하나로 오는 것은 그대로다.
 `DuplicateKeyException` 같은 세분화된 타입만 골라 잡는 코드는 Kotlin에서도 똑같이 유효하다.
 
 반대 방향의 상호 운용도 알아 두자.
-Kotlin 함수가 던지는 예외를 Java 쪽에서 checked 예외로 다뤄야 한다면 ``@Throws(SQLException::class)`` 애너테이션으로 `throws` 선언을 바이트코드에 만들어 줄 수 있다.
-Spring JDBC 위에서는 unchecked 예외만 오가므로 이런 선언이 필요할 일은 거의 없다.
+Kotlin 함수가 던지는 예외를 Java 쪽에서 checked 예외로 다뤄야 한다면 ``@Throws(SQLException::class)`` 애너테이션으로 바이트코드에 `throws` 선언을 넣을 수 있다.
+Spring JDBC를 쓰는 코드에서는 unchecked 예외만 오가므로 이런 선언이 필요할 일은 거의 없다.
 
 === Spring이 제공하는 Kotlin 확장 함수
 
 ``spring-jdbc``에는 Kotlin 전용 확장 함수가 들어 있다.
 대표적인 것이 reified 타입 파라미터를 쓰는 ``queryForObject``다.
-`Long.class` 같은 클래스 리터럴 인자가 사라진다.
+`Long.class` 같은 클래스 리터럴을 인자로 넘기지 않아도 된다.
 
 [source,kotlin,indent=0]
 ----
@@ -106,16 +113,20 @@ include::{examples}/ch08-kotlin/src/main/kotlin/flashcard/kotlin/CardRepository.
 ==== JdbcClient의 확장 함수는 직접 만든다
 
 2장에서 소개한 ``JdbcClient``는 fluent API라서 Kotlin 문법과도 잘 어울린다.
-다만 이 책을 쓰는 시점의 ``spring-jdbc``에 들어 있는 공식 Kotlin 확장 함수는 앞에서 본 템플릿용(``JdbcOperations``, ``MapSqlParameterSource``)까지라서, ``JdbcClient``에서는 매핑 타입을 ``query(Card::class.java)``처럼 클래스 리터럴로 넘겨야 한다.
-이 빠진 부분은 reified 확장 함수를 직접 선언해 채울 수 있다.
+다만 이 책을 쓰는 시점의 ``spring-jdbc``에 들어 있는 공식 Kotlin 확장 함수는 앞에서 본 템플릿용(``JdbcOperations``, ``MapSqlParameterSource``)뿐이다.
+그래서 ``JdbcClient``에서는 매핑 타입을 ``query(Card::class.java)``처럼 클래스 리터럴로 넘겨야 한다.
+이 부분은 reified 확장 함수를 직접 선언해 보완할 수 있다.
 
 [source,kotlin,indent=0]
 ----
 include::{examples}/ch08-kotlin/src/main/kotlin/flashcard/kotlin/JdbcClientExtensions.kt[tag=extension]
 ----
 
-``query<Card>()``처럼 타입 인자를 명시해 호출하면 타입 파라미터가 없는 기존 멤버 메서드 ``query()``는 후보에서 빠지므로, 같은 이름이어도 확장 함수와 충돌하지 않는다.
-마지막의 캐스트는 Spring Framework 7이 JSpecify 널 표기로 "매핑 결과 값이 null일 수도 있다"고 보수적으로 선언한 것을, non-null 타입으로 매핑하는 우리 사용법에 맞게 좁혀 주는 처리다.
+``query<Card>()``처럼 타입 인자를 명시해 호출하면 타입 파라미터가 없는 기존 멤버 메서드 ``query()``는 후보에서 빠진다.
+그래서 같은 이름이어도 확장 함수와 충돌하지 않는다.
+마지막의 캐스트는 널 표기 때문에 필요하다.
+Spring Framework 7은 JSpecify 널 표기로 "매핑 결과 값이 null일 수도 있다"고 보수적으로 선언했다.
+이 예제는 non-null 타입으로 매핑하므로, 캐스트로 결과 타입을 non-null로 좁힌다.
 이 확장을 쓰면 ``JdbcClient`` 기반 저장소가 이렇게 정리된다.
 
 [source,kotlin,indent=0]
@@ -129,7 +140,8 @@ include::{examples}/ch08-kotlin/src/main/kotlin/flashcard/kotlin/CardClientRepos
 === 테스트: @DisplayName과 AssertJ
 
 다른 장과 마찬가지로 테스트 메서드 이름은 간결하게 두고, 자세한 설명은 ``@DisplayName``에 우리말로 적는다.
-단언은 AssertJ를 쓰는데, data class의 값 동등성 덕분에 조회 결과를 통째로 비교하는 단언도 간단하다.
+단언은 AssertJ로 한다.
+data class는 프로퍼티 값이 모두 같으면 ``equals``가 참이므로(값 동등성), 조회 결과 객체를 통째로 비교하는 단언도 간단하다.
 
 [source,kotlin,indent=0]
 ----
@@ -138,12 +150,16 @@ include::{examples}/ch08-kotlin/src/test/kotlin/flashcard/kotlin/CardRepositoryT
 
 === 생태계 참고 사항
 
-* *Spring Data JDBC와 data class*: 6장의 엔티티도 data class로 쓸 수 있다. `val` 프로퍼티와 `copy` 기반의 불변 모델이 Spring Data JDBC의 "저장 시점 상태 반영" 철학과 잘 맞는다.
-* *Spring JDBC Plus*: Kotlin을 공식 지원하며, `spring-data-jdbc-plus-sql-kotlin` 모듈이 Kotlin DSL을 제공한다. 7장의 SQL 클래스와 리포지토리 구현 패턴도 Kotlin에서 동일하게 쓸 수 있다.
-* *coroutine*: 이 책의 범위 밖이지만, JDBC는 블로킹 API이므로 coroutine에서 쓸 때는 ``Dispatchers.IO``로 감싸는 것이 관례다. 3장에서 본 대로 트랜잭션은 스레드에 바인딩되므로, 트랜잭션 경계와 그 안의 DB 호출은 전부 같은 ``withContext`` 블록 안에 두어야 한다. 중간에 suspend되어 스레드가 바뀌면 그 뒤의 호출은 트랜잭션 밖에서 실행된다.
+* *Spring Data JDBC와 data class*: 6장의 엔티티도 data class로 쓸 수 있다.
+`val` 프로퍼티와 `copy` 기반의 불변 모델이 Spring Data JDBC의 "저장 시점 상태 반영" 철학과 잘 맞는다.
+* *Spring JDBC Plus*: Kotlin을 공식 지원하며, `spring-data-jdbc-plus-sql-kotlin` 모듈이 Kotlin DSL을 제공한다.
+7장의 SQL 클래스와 리포지토리 구현 패턴도 Kotlin에서 동일하게 쓸 수 있다.
+* *coroutine*: 이 책의 범위 밖이지만, JDBC는 블로킹 API이므로 coroutine에서 쓸 때는 ``withContext(Dispatchers.IO)`` 블록 안에서 호출하는 것이 관례다.
+3장에서 본 대로 트랜잭션은 스레드에 바인딩되므로, 트랜잭션 경계와 그 안의 DB 호출은 전부 같은 ``withContext`` 블록 안에 두어야 한다.
+중간에 suspend되어 스레드가 바뀌면 그 뒤의 호출은 트랜잭션 밖에서 실행된다.
 
 === 다음으로
 
 JDBC 표준에서 출발해 템플릿, 트랜잭션 추상화, 자동 설정, 리포지토리, 확장 라이브러리, 그리고 다른 언어까지 올라왔다.
-기술의 레이어는 다 오른 셈이지만, 각 기술에는 아직 소개하지 못한 기능이 남아 있다.
+기술 스택의 레이어는 모두 다뤘지만, 각 기술에는 아직 소개하지 못한 기능이 남아 있다.
 마지막 두 장에서 Spring Data JDBC와 Spring JDBC Plus의 심화 기능을 마저 둘러보고 책을 맺는다.

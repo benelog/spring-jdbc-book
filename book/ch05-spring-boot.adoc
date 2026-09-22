@@ -2,9 +2,9 @@
 
 앞 장까지 우리는 ``DataSource``를 만들고, 템플릿을 만들고, 트랜잭션 매니저를 등록하는 조립 코드를 직접 썼다.
 이 조립은 어느 프로젝트에서나 거의 같다.
-Spring Boot는 "클래스패스에 있는 것을 보고 뻔한 조립을 대신 해 주는" 자동 설정(auto-configuration)으로 이 반복을 없앤다.
+Spring Boot는 "클래스패스에 있는 것을 보고 뻔한 조립을 대신해 주는" 자동 설정(auto-configuration)으로 이 반복을 없앤다.
 
-이 장에서는 ``spring-boot-starter-jdbc``로 데이터 액세스 기반을 받고, 그 위에 Flashcard의 첫 웹 버전을 만든다.
+이 장에서는 ``spring-boot-starter-jdbc``로 데이터 액세스에 필요한 빈을 자동으로 등록하고, 그 빈들로 Flashcard의 첫 웹 버전을 만든다.
 덱과 카드를 관리하고 카드를 넘겨 보는, 아직 복습 일정은 없는 기본판이다.
 예제 모듈은 ``examples/ch05-boot-jdbc``다.
 
@@ -24,8 +24,9 @@ include::{examples}/ch05-boot-jdbc/build.gradle[tag=deps]
 * `spring-boot-h2console`: H2가 제공하는 웹 콘솔의 자동 설정. Spring Boot 4에서 별도 모듈로 분리되었다.
 
 테스트 의존성도 스타터로 정리된다.
-``spring-boot-starter-test``가 JUnit, AssertJ, Mockito 등 공통 도구를, ``-jdbc-test``와 ``-webmvc-test``가 각각 ``@JdbcTest``와 ``@WebMvcTest``/``MockMvc`` 같은 슬라이스 테스트(전체 컨텍스트 대신 한 계층의 빈만 띄우는 테스트) 지원을 가져온다.
-앞 장들에서 JUnit과 AssertJ를 하나씩 선언하던 것도 스타터 하나로 흡수됐다.
+``spring-boot-starter-test``는 JUnit, AssertJ, Mockito 등 공통 도구를 가져온다.
+``-jdbc-test``와 ``-webmvc-test``는 각각 ``@JdbcTest``와 ``@WebMvcTest``/``MockMvc`` 같은 슬라이스 테스트(전체 컨텍스트 대신 한 계층의 빈만 띄우는 테스트) 지원을 가져온다.
+앞 장들에서 JUnit과 AssertJ를 하나씩 선언하던 것도 이제 스타터 하나면 된다.
 이 장의 후반에서 쓸 Testcontainers 의존성은 해당 절에서 따로 소개한다.
 
 애플리케이션 클래스는 이것이 전부다.
@@ -40,12 +41,12 @@ include::{examples}/ch05-boot-jdbc/src/main/java/flashcard/boot/FlashcardApplica
 ``SpringApplication.run``은 이 클래스를 설정으로 삼아 컨테이너를 만들고, 내장 톰캣까지 띄운다.
 
 자동 설정에는 알아 두어야 할 규칙이 하나 있다.
-*같은 타입의 빈을 개발자가 직접 등록하면 자동 설정은 그 빈을 만들지 않고 물러난다.*
+*같은 타입의 빈을 개발자가 직접 등록하면 자동 설정은 그 타입의 빈을 만들지 않는다.*
 예를 들어 설정 클래스에 ``DataSource`` 빈을 직접 두면 Boot는 HikariCP 풀을 만들지 않는다.
 자동 설정은 어디까지나 기본값이고, 직접 등록한 빈이 언제나 우선한다.
-이 규칙은 이 장의 Testcontainers 절과 9장에서 다시 만난다.
+이 규칙은 이 장의 Testcontainers 절과 9장에서 다시 다룬다.
 
-.spring-boot-starter-jdbc 자동 설정: 클래스패스와 프로퍼티를 보고 4장의 조립을 대신하되, 직접 등록한 빈이 있으면 물러난다
+.spring-boot-starter-jdbc 자동 설정: 클래스패스와 프로퍼티를 보고 4장의 조립을 대신하되, 직접 등록한 빈이 있으면 그 타입의 빈은 만들지 않는다
 image::ch05-autoconfig.png[자동 설정 흐름,880]
 
 === 설정 파일: application.properties
@@ -58,7 +59,7 @@ include::{examples}/ch05-boot-jdbc/src/main/resources/application.properties[tag
 ----
 
 ``spring.sql.init.mode=always``는 애플리케이션이 뜰 때 클래스패스의 ``schema.sql``을 실행하라는 뜻이다.
-스키마의 `create table if not exists` 덕분에 여러 번 떠도 안전하다.
+스키마의 `create table if not exists` 덕분에 애플리케이션을 여러 번 띄워도 안전하다.
 
 개발 중에는 실행되는 SQL이 보이면 편하다.
 Spring JDBC는 DEBUG 레벨로 SQL을 로깅한다.
@@ -78,17 +79,19 @@ include::{examples}/ch05-boot-jdbc/src/main/resources/application.properties[tag
 ----
 
 앱을 띄우고(`./gradlew :ch05-boot-jdbc:bootRun`) ``http://localhost:8080/h2-console``에 접속한 뒤, JDBC URL에 애플리케이션과 같은 ``jdbc:h2:./db/flashcard;AUTO_SERVER=TRUE``를 넣으면 접속된다.
-파일 DB에 두 프로세스가 동시에 붙는 것이 가능한 이유가 바로 URL의 ``AUTO_SERVER=TRUE``다.
 앱을 띄워 둔 채 콘솔에서 ``select * from cards``를 실행하며 개발하는 흐름을 꼭 경험해 보자.
 
-콘솔 없이 터미널이 편하다면 빌드 파일에 정의해 둔 `./gradlew :ch05-boot-jdbc:h2` 태스크로 H2의 자체 콘솔을 띄울 수도 있다.
+앱과 별개로 콘솔을 띄우고 싶다면 빌드 파일에 정의해 둔 `./gradlew :ch05-boot-jdbc:h2` 태스크로 H2의 자체 콘솔을 별도 프로세스로 실행할 수도 있다.
+파일 DB 하나에 앱과 이 콘솔, 두 프로세스가 동시에 접속할 수 있는 것은 URL의 ``AUTO_SERVER=TRUE`` 덕분이다.
 
 === 저장소: 주입받는 템플릿
 
 Boot가 템플릿들을 빈으로 만들어 두었으므로, 저장소는 `DataSource` 대신 템플릿을 바로 주입받는다.
 2장에서는 저장소 생성자가 ``DataSource``를 받아 템플릿을 스스로 만들었는데, 여기서는 그 선택을 뒤집는다.
-Boot가 등록한 템플릿에는 ``spring.jdbc.template.fetch-size`` 같은 프로퍼티로 조정한 설정이 실려 있어, 저장소마다 템플릿을 새로 만들면 그 설정이 사라진다.
-2장의 논거는 조립을 손으로 할 때의 것이었고, 컨테이너가 조립을 맡는 환경에서는 공용 빈을 그대로 받는 쪽이 맞다.
+Boot가 등록한 템플릿에는 ``spring.jdbc.template.fetch-size`` 같은 프로퍼티로 조정한 설정이 적용되어 있다.
+저장소마다 템플릿을 새로 만들면 그 설정이 빠진다.
+2장의 논거는 조립을 손으로 할 때의 이야기였다.
+컨테이너가 조립을 맡는 환경에서는 공용 빈을 그대로 받는 쪽이 맞다.
 
 [source,java,indent=0]
 ----
@@ -96,8 +99,9 @@ include::{examples}/ch05-boot-jdbc/src/main/java/flashcard/boot/DeckRepository.j
 ----
 
 홈 화면에는 덱마다 카드 수를 보여 주고 싶다.
-덱별 카드 수는 조인과 집계가 필요한, 테이블 한 행을 그대로 옮긴 객체가 아닌 **조회 전용 모델**이다.
-이럴 때 Spring JDBC는 화면에 맞는 record를 만들고 SQL로 바로 채우면 된다.
+덱별 카드 수는 테이블 한 행을 그대로 옮긴 객체가 아니다.
+조인과 집계로 만들어 내는 **조회 전용 모델**이다.
+Spring JDBC에서는 이럴 때 화면에 맞는 record를 만들고 SQL 결과로 바로 채우면 된다.
 
 [source,java,indent=0]
 ----
@@ -124,7 +128,8 @@ Spring MVC 컨트롤러는 ``@Controller``가 붙은 빈이다.
 include::{examples}/ch05-boot-jdbc/src/main/java/flashcard/boot/HomeController.java[tag=class]
 ----
 
-Thymeleaf 템플릿은 HTML 그대로다. `th:` 접두어 속성만 템플릿 문법이다.
+Thymeleaf 템플릿은 HTML 그대로다.
+`th:` 접두어가 붙은 속성만 템플릿 문법이다.
 
 [source,html,indent=0]
 ----
@@ -139,11 +144,12 @@ include::{examples}/ch05-boot-jdbc/src/main/resources/templates/home.html[tag=ho
 include::{examples}/ch05-boot-jdbc/src/main/java/flashcard/boot/DeckController.java[tag=create]
 ----
 
-``@RequestParam``은 폼 필드나 쿼리 파라미터 값을, ``@PathVariable``은 ``/decks/{deckId}``처럼 URL 경로에 낀 값을 메서드 파라미터로 받는다.
+``@RequestParam``은 폼 필드나 쿼리 파라미터 값을, ``@PathVariable``은 ``/decks/{deckId}``처럼 URL 경로에 들어 있는 값을 메서드 파라미터로 받는다.
 반환 문자열이 ``redirect:``로 시작하면 템플릿 이름이 아니라 리다이렉트할 URL로 해석된다.
 
 학습 화면은 데이터 액세스 관점에서는 새로울 것이 없어 흐름만 소개한다.
-몇 번째 카드를 어느 면으로 보는지는 쿼리 파라미터로만 관리하는, 상태 없는 가장 단순한 구현이다.
+몇 번째 카드를 어느 면으로 보는지는 쿼리 파라미터로만 관리한다.
+서버에 상태를 저장하지 않는 가장 단순한 구현이다.
 
 [source,java,indent=0]
 ----
@@ -162,7 +168,7 @@ include::{examples}/ch05-boot-jdbc/src/test/java/flashcard/boot/DeckRepositoryTe
 ----
 
 ``@JdbcTest``는 각 테스트를 트랜잭션으로 감싸고 끝나면 롤백하므로, 테스트끼리 데이터가 섞이지 않는다.
-4장에서 소개한 테스트 트랜잭션 롤백 기법을 슬라이스가 대신 적용해 주는 것이다.
+4장에서 소개한 테스트 트랜잭션 롤백 기법을 ``@JdbcTest``가 자동으로 적용한다.
 저장소는 트랜잭션을 스스로 관리하지 않으므로, 4장의 서비스 테스트와 달리 자동 롤백과 충돌할 일도 없다.
 
 테스트에 필요한 데이터를 저장소 호출 대신 SQL로 준비하고 싶다면 ``spring-test``의 ``@Sql``을 쓴다.
@@ -173,11 +179,13 @@ include::{examples}/ch05-boot-jdbc/src/test/java/flashcard/boot/DeckRepositoryTe
 include::{examples}/ch05-boot-jdbc/src/test/java/flashcard/boot/DeckRepositoryTest.java[tag=sql]
 ----
 
-문장이 많아지면 ``@Sql(scripts = "/deck-cards.sql")``처럼 파일로 빼는 편이 낫지만, 이 정도 분량은 코드에 직접 두면 준비한 데이터와 검증 조건이 한 화면에 보인다는 장점이 있다.
+문장이 많아지면 ``@Sql(scripts = "/deck-cards.sql")``처럼 파일로 빼는 편이 낫다.
+이 정도 분량이라면 코드에 직접 두어 준비한 데이터와 검증 조건을 한 화면에서 볼 수 있다.
 
 웹 계층까지 포함한 흐름은 ``@SpringBootTest``와 ``MockMvc``로 확인한다.
 ``@SpringBootTest``는 ``@SpringBootApplication`` 클래스를 찾아 운영과 같은 전체 컨텍스트를 띄운다.
-``MockMvc``는 톰캣을 띄우지 않고 요청 객체를 만들어 컨트롤러까지 호출해 주는 도구로, ``@AutoConfigureMockMvc``를 붙이면 빈으로 준비된다.
+``MockMvc``는 톰캣을 띄우지 않고 요청 객체를 만들어 컨트롤러까지 호출해 주는 도구다.
+테스트 클래스에 ``@AutoConfigureMockMvc``를 붙이면 빈으로 등록된다.
 운영 설정의 파일 DB 대신 메모리 DB를 쓰도록 프로퍼티만 덮어쓴다.
 
 [source,java,indent=0]
@@ -192,10 +200,11 @@ include::{examples}/ch05-boot-jdbc/src/test/java/flashcard/boot/FlashcardWebTest
 
 ==== 컨텍스트 캐싱과 프로퍼티
 
-``@SpringBootTest``는 전체 컨텍스트를 띄우므로, 4장에서 설명한 컨텍스트 캐싱의 덕을 가장 크게 보는 쪽이자 캐시 적중에 가장 쉽게 실패하는 쪽이기도 하다.
+``@SpringBootTest``는 전체 컨텍스트를 띄우므로 4장에서 설명한 컨텍스트 캐싱의 효과가 가장 크다.
+동시에 캐시 적중에 가장 쉽게 실패하기도 한다.
 캐시 키에는 ``properties``로 덮어쓴 값도 들어간다.
-웹 테스트 클래스를 하나 더 만들면서 datasource URL만 ``jdbc:h2:mem:another``로 바꿔 적으면, 구성이 다르다고 판단되어 전체 테스트를 돌릴 때 전체 컨텍스트가 한 번 더 뜬다.
-이런 클래스가 늘수록 전체 테스트 시간이 컨텍스트 로딩으로 채워지므로, 프로퍼티 조합은 통째로 공유해야 한다.
+웹 테스트 클래스를 하나 더 만들면서 datasource URL만 ``jdbc:h2:mem:another``로 바꿔 적으면, 캐시 키가 달라지므로 전체 테스트를 돌릴 때 애플리케이션 컨텍스트 전체가 한 번 더 뜬다.
+이런 클래스가 늘수록 전체 테스트 시간에서 컨텍스트 로딩이 차지하는 몫이 커지므로, 프로퍼티 조합은 통째로 공유해야 한다.
 간단하게는 설정 문자열을 상수로 뽑아 함께 쓰고, 클래스가 많아지면 ``@SpringBootTest``와 프로퍼티를 묶은 메타 애너테이션(여러 애너테이션을 합쳐 만든 사용자 정의 애너테이션)을 만들어 붙인다.
 
 컨텍스트를 공유하면 그 안의 DB 상태도 공유된다는 점은 기억해 두자.
@@ -205,11 +214,11 @@ include::{examples}/ch05-boot-jdbc/src/test/java/flashcard/boot/FlashcardWebTest
 
 ==== 실제 DB로 테스트: Testcontainers
 
-지금까지의 테스트는 전부 H2 위에서 돌았다.
+지금까지의 테스트는 전부 H2에서 실행했다.
 빠르고 간편하지만, 운영 DB가 PostgreSQL이나 MySQL이라면 H2 테스트는 "우리 DB에서도 되는지"까지 보증하지 못한다.
 DB마다 SQL 방언, 타입 처리, 잠금 동작이 미묘하게 다르기 때문이다.
 이 차이를 검증하는 실무 표준이 **Testcontainers**다.
-테스트가 시작될 때 Docker로 진짜 DB를 컨테이너로 띄우고, 끝나면 지운다.
+테스트가 시작될 때 Docker로 실제 DB를 컨테이너로 띄우고, 끝나면 지운다.
 
 의존성 세 가지와 운영 DB의 드라이버를 테스트 스코프에 추가한다.
 
@@ -226,17 +235,19 @@ include::{examples}/ch05-boot-jdbc/src/test/java/flashcard/boot/DeckRepositoryPo
 ----
 
 핵심은 ``@ServiceConnection``이다.
-컨테이너가 뜨면 Boot가 그 접속 정보(URL, 계정)를 담은 빈을 등록하고, ``DataSource`` 자동 설정은 프로퍼티보다 그 빈을 우선해 풀을 구성한다.
+컨테이너가 뜨면 Boot가 그 접속 정보(URL, 계정)를 담은 빈을 등록한다.
+``DataSource`` 자동 설정은 프로퍼티보다 그 빈을 우선해 풀을 구성한다.
 이 장 첫머리에서 본 "직접 등록한 빈이 우선한다"는 규칙이 여기서도 작동한다.
-프로퍼티를 한 줄도 적지 않았는데 `spring.sql.init.mode=always` 설정 덕분에 ``schema.sql``까지 새 DB에 그대로 적용된다.
+이 테스트를 위해 프로퍼티를 한 줄도 적지 않았지만, `spring.sql.init.mode=always` 설정 덕분에 ``schema.sql``도 새 DB에서 그대로 실행된다.
 ``@JdbcTest``의 "내장 DB로 바꿔치기"도 서비스 커넥션이 있으면 자동으로 비활성화되므로, H2 테스트와 같은 애너테이션 구성을 그대로 쓸 수 있다.
-`static` 필드에 ``@Container``를 붙였으므로 컨테이너는 클래스당 한 번만 뜨고, 트랜잭션 롤백 격리는 H2 때와 동일하게 동작한다.
+`static` 필드에 ``@Container``를 붙였으므로 컨테이너는 클래스당 한 번만 뜬다.
+테스트마다 트랜잭션을 롤백해 데이터를 격리하는 방식도 H2 때와 같다.
 
 그렇다고 모든 테스트를 컨테이너로 돌리자는 뜻은 아니다.
 컨테이너 기동에는 초 단위의 시간이 들고 Docker가 있는 환경이 필요하다(``disabledWithoutDocker = true``는 Docker가 없으면 실패 대신 건너뛰게 한다).
-자주 도는 저장소 테스트는 기동이 빠른 H2로 돌리고, DB 방언을 타는 쿼리나 릴리스 전 검증처럼 정확성이 중요한 자리에 Testcontainers를 두는 조합이 실용적이다.
+자주 도는 저장소 테스트는 기동이 빠른 H2로 돌리고, DB마다 문법이 다른 쿼리나 릴리스 전 검증처럼 정확성이 중요한 테스트에만 Testcontainers를 쓰는 조합이 실용적이다.
 
-컨테이너 테스트가 잡아 주는 차이를 하나 보고 가자.
+컨테이너 테스트에서만 드러나는 차이를 하나 보자.
 2장의 ``DuplicateKeyException`` 관용구를 두 DB에서 트랜잭션 안에 넣고 돌려 본다.
 ``@JdbcTest``는 테스트마다 트랜잭션을 열어 주므로, 테스트 메서드 본문이 곧 트랜잭션 안이다.
 H2에서는 실패한 insert 뒤의 조회가 아무 일 없이 이어진다.
@@ -254,26 +265,28 @@ PostgreSQL은 트랜잭션 안에서 문장 하나가 실패하면 그 트랜잭
 include::{examples}/ch05-boot-jdbc/src/test/java/flashcard/boot/DuplicateKeyIdiomPostgresTest.java[tag=postgres]
 ----
 
-2장에서 예고한 대로, 실패할 수 있는 문장을 3장의 ``NESTED`` 전파로 감싸 저장점 안에서 실행하면 실패한 문장만 되돌아가고 바깥 트랜잭션은 계속 쓸 수 있다.
+2장에서 예고한 대로, 실패할 수 있는 문장을 3장의 ``NESTED`` 전파로 감싸 저장점 안에서 실행하면 실패한 문장만 롤백되고 바깥 트랜잭션은 계속 쓸 수 있다.
 
 [source,java,indent=0]
 ----
 include::{examples}/ch05-boot-jdbc/src/test/java/flashcard/boot/DuplicateKeyIdiomPostgresTest.java[tag=nested]
 ----
 
-H2만으로 테스트했다면 운영에서야 만났을 차이다.
+H2만으로 테스트했다면 운영 환경에서야 발견했을 차이다.
 
 === 가상 스레드와 JDBC
 
 JDBC는 *블로킹* API다.
 쿼리가 DB에서 도는 동안 호출한 스레드는 결과가 올 때까지 멈춰서 기다린다.
 전통적인 플랫폼 스레드 시절에는 이것이 확장성의 한계였다.
-스레드 하나가 메모리를 크게 차지하는 비싼 자원이라 톰캣은 스레드 수를 기본 200개로 제한했고, 느린 쿼리를 기다리며 잠든 스레드가 그 자리를 차지하면 새 요청은 줄을 서야 했다.
-이 한계를 넘겠다고 논블로킹 스택(WebFlux와 R2DBC)으로 갈아타는 선택지도 있었지만, 코드 전체가 리액티브 스타일로 바뀌는 큰 공사였다.
+스레드 하나가 메모리를 크게 차지하는 비싼 자원이라 톰캣은 스레드 수를 기본 200개로 제한했다.
+느린 쿼리를 기다리며 잠든 스레드가 200개를 모두 차지하면 새 요청은 줄을 서야 했다.
+이 한계를 넘으려고 논블로킹 스택(WebFlux와 R2DBC)으로 갈아타는 선택지도 있었지만, 코드 전체를 리액티브 스타일로 다시 써야 하는 큰 작업이었다.
 
 JDK 21에서 정식이 된 **가상 스레드**가 이 상황을 바꿨다.
-가상 스레드는 메모리를 조금만 차지해 수만 개를 만들어도 부담이 없고, JDBC 호출로 블로킹되면 그 자리를 차지하는 대신 실행 중이던 OS 스레드를 놓아 준다.
-블로킹 API인 JDBC를 *한 줄도 고치지 않고* 논블로킹 스택에 준하는 동시성을 얻는 것이다.
+가상 스레드는 메모리를 조금만 차지해 수만 개를 만들어도 부담이 없다.
+또 JDBC 호출로 블로킹되면 실행 중이던 OS 스레드를 반납하므로, 그 OS 스레드가 다른 가상 스레드를 실행할 수 있다.
+블로킹 API인 JDBC를 *한 줄도 고치지 않고* 논블로킹 스택에 준하는 동시성을 얻는다.
 Boot에서는 프로퍼티 하나로 켠다.
 
 [source,properties,indent=0]
@@ -282,12 +295,17 @@ include::{examples}/ch05-boot-jdbc/src/main/resources/application.properties[tag
 ----
 
 이 설정 하나로 톰캣의 요청 처리와 ``@Async`` 실행 등이 가상 스레드로 옮겨 간다.
-초기에는 `synchronized` 블록 안에서 블로킹되면 OS 스레드를 놓지 못하는 pinning 문제가 있어 오래된 JDBC 드라이버와의 궁합이 걱정거리였지만, 이 책이 기준으로 삼는 JDK 25에서는 언어 차원에서 해소되었다(JDK 24의 JEP 491).
+초기에는 `synchronized` 블록 안에서 블로킹되면 OS 스레드를 반납하지 못하는 pinning 문제가 있었다.
+그래서 ``synchronized``를 쓰는 오래된 JDBC 드라이버와 함께 쓸 때 문제가 되지 않을지 걱정이었다.
+이 문제는 이 책이 기준으로 삼는 JDK 25에서는 JVM 차원에서 해소되었다(JDK 24의 JEP 491).
 
 다만 가상 스레드는 스레드라는 병목을 없앨 뿐, **커넥션이라는 병목은 그대로 남긴다**는 점을 분명히 하자.
 동시에 처리 중인 요청이 1만 개가 되어도 DB 커넥션은 여전히 풀 크기(HikariCP 기본 10개)만큼이다.
-예전에는 톰캣 스레드 200개가 동시 요청 수를 제한하는 역할을 겸했지만, 그 제한이 사라지면 몰려든 요청이 전부 커넥션 풀 앞에 줄을 서고, 풀의 대기 시간 초과(connection timeout) 오류가 새로운 첫 번째 병목으로 드러난다.
-가상 스레드를 켠 뒤에는 풀 크기와 대기 시간 설정을 부하에 맞게 다시 살펴야 하고, "트랜잭션 안에서 느린 외부 호출을 하지 않는다"는 4장의 원칙은 오히려 더 중요해진다.
+예전에는 톰캣 스레드 200개가 동시 요청 수를 제한하는 역할도 했다.
+그 제한이 사라지면 몰려든 요청이 전부 커넥션 풀 앞에서 기다린다.
+이제는 커넥션 풀이 첫 번째 병목이 되고, 풀의 대기 시간 초과(connection timeout) 오류가 먼저 나타난다.
+가상 스레드를 켠 뒤에는 풀 크기와 대기 시간 설정을 부하에 맞게 다시 살펴야 한다.
+"트랜잭션 안에서 느린 외부 호출을 하지 않는다"는 4장의 원칙은 오히려 더 중요해진다.
 커넥션을 오래 붙드는 코드의 비용은 스레드가 아무리 많아져도 사라지지 않기 때문이다.
 
 .가상 스레드를 켜면 병목이 톰캣 스레드에서 커넥션 풀로 옮겨 간다
@@ -295,9 +313,9 @@ image::ch05-virtual-threads.png[가상 스레드와 커넥션 병목,760]
 
 === 정리
 
-설정 코드가 프로퍼티 몇 줄로 줄었고, 그 위에 실제로 쓸 수 있는 웹 앱이 올라갔다.
+설정 코드가 프로퍼티 몇 줄로 줄었고, 그 설정으로 실제로 쓸 수 있는 웹 앱을 만들었다.
 중요한 것은 Boot가 등록해 준 빈들이 전부 앞 장에서 우리가 직접 만들던 바로 그 객체라는 점이다.
-자동 설정이 낯설게 느껴질 때는 "4장에서 내가 직접 하던 조립을 Boot가 대신했을 뿐"이라고 번역하면 된다.
+자동 설정이 낯설게 느껴질 때는 "4장에서 내가 직접 하던 조립을 Boot가 대신했을 뿐"이라고 바꿔 생각하면 된다.
 
 지금까지는 SQL과 매핑을 전부 손으로 썼다.
 다음 장에서는 그중 뻔한 CRUD를 프레임워크에 맡기는 Spring Data JDBC를 본다.
