@@ -7,8 +7,8 @@
 태그 목록처럼 테이블로 만들기는 과한 값은 어디에 담나?
 
 이 장은 그 질문들에 답하는 Spring Data JDBC의 나머지 도구들을 다룬다.
-예제 모듈은 ``examples/ch09-data-jdbc-deep``이고, 6장처럼 덱과 카드 두 애그리거트로 이루어진 테스트 중심 모듈이다.
-의존성도 6장과 똑같다.
+예제 모듈은 ``examples/ch09-data-jdbc-deep``이고, 덱과 카드를 각각의 애그리거트로 둔 테스트 중심 모듈이다.
+의존성은 6장에서 Testcontainers만 뺀 구성이다.
 이 장의 심화 기능들에 새 의존성은 필요 없다.
 
 [source,groovy,indent=0]
@@ -117,8 +117,7 @@ include::{examples}/ch09-data-jdbc-deep/src/test/java/flashcard/deep/CardReposit
 
 반환 타입을 ``int``로 하면 영향받은 행 수를 돌려준다.
 2장에서 ``JdbcTemplate.update``가 돌려주던 그 값이다.
-주의할 점도 2장과 같다.
-이 UPDATE는 애그리거트를 거치지 않고 테이블을 직접 갱신한다.
+다만 이 UPDATE는 2장의 ``update``처럼 애그리거트를 거치지 않고 테이블을 직접 갱신한다.
 그래서 낙관적 잠금(`@Version`)이나 이 장 뒷부분의 콜백·감사가 적용되지 않는다.
 
 === 감사: 생성·수정 시각 자동 기록

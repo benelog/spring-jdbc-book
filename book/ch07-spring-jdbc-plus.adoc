@@ -148,7 +148,7 @@ include::{examples}/ch07-jdbc-plus/src/main/java/flashcard/plus/repository/CardR
 
 엔티티가 아닌 화면용 record는 5장처럼 ``RowMapper``를 지정해 받는다.
 덱 요약(카드 수 + 오늘 복습 수)이 그 예다.
-6장에서 정리한 "엔티티를 바깥 레이어까지 내보내지 않는다"는 원칙이 완성판에서도 그대로 이어진다.
+6장에서 정리한 "엔티티를 웹 계층까지 내보내지 않는다"는 원칙이 완성판에서도 그대로 이어진다.
 
 [source,java,indent=0]
 ----
@@ -171,7 +171,7 @@ include::{examples}/ch07-jdbc-plus/src/main/java/flashcard/plus/repository/Smart
 ----
 
 기술 단계를 밟아 온 독자라면 이 구성이 익숙할 것이다.
-한 리포지토리 안에서 1~6장의 도구가 레이어를 이루며 공존한다.
+완성판의 리포지토리들에서 1~6장의 도구가 레이어를 이루며 공존한다.
 조회마다 `NamedParameterJdbcTemplate` 직접 호출, 표준 `@Query`, Plus의 `JdbcRepositorySupport` 중 가장 알맞은 도구를 골라 쓴다.
 
 === 학습 흐름: 세션, 판정, 재도전 라운드
