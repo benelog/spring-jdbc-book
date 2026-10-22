@@ -4,7 +4,7 @@
 이 장에서는 그때 쓰지 않고 지나간 Plus의 나머지 기능들을 살펴본다.
 삭제를 되돌릴 수 있게 하는 soft delete, 애그리거트를 쿼리 한 번으로 읽는 조회, 대량 저장, 그리고 파라미터 처리의 소소하지만 실무적인 개선들이다.
 
-예제 모듈은 ``examples/ch10-jdbc-plus-deep``로, 화면 없이 리포지토리와 테스트에 집중한다.
+예제 모듈은 ``examples/ch10-jdbc-plus-deep``으로, 화면 없이 리포지토리와 테스트에 집중한다.
 설정(표준 리포지토리를 끄고 Plus를 켜는 프로퍼티)은 7장과 같고, 의존성은 7장에서 웹 관련 스타터를 덜어 낸 최소 구성이다.
 
 [source,groovy,indent=0]
@@ -17,7 +17,7 @@ include::{examples}/ch10-jdbc-plus-deep/build.gradle[tag=deps]
 include::{examples}/ch10-jdbc-plus-deep/src/main/resources/schema.sql[tag=schema]
 ----
 
-덱에는 `deleted` 칼럼이, 카드에는 예문(card_example) 테이블이 추가됐다.
+덱에는 `deleted` 칼럼이, 카드에는 예문(`card_example`) 테이블이 추가됐다.
 각각 soft delete와 애그리거트 조회 예제에 쓴다.
 
 === Soft delete: 삭제를 UPDATE로
@@ -43,7 +43,8 @@ include::{examples}/ch10-jdbc-plus-deep/src/test/java/flashcard/plusdeep/reposit
 `boolean` 대신 ``ValueType.STRING``을 쓰면 `state` 칼럼을 `'DELETED'` 같은 문자열로 바꾸는 방식도 가능하다.
 상태가 셋 이상인 모델(활성/보관/삭제)에 어울린다.
 
-주의할 점이 하나 있다. 위 테스트에서 보듯 *조회는 자동으로 걸러 주지 않는다.*
+주의할 점이 하나 있다.
+위 테스트에서 보듯 *조회는 자동으로 걸러 주지 않는다.*
 `findById`, `findAll`, ``count``는 지워진 행을 여전히 돌려준다.
 "휴지통을 제외한 목록"과 "휴지통 목록"은 조회 조건으로 직접 표현해야 한다.
 7장에서 SQL 클래스에 조회 조건을 적던 방식 그대로다.
@@ -125,7 +126,7 @@ image::ch10-aggregate-join.png[조인 결과를 애그리거트로 조립,880]
 
 === saveBatch: 대량 저장
 
-2장과 3장에서는 카드 저장을 ``batchUpdate``로 묶어 보냈다.
+2장과 3장에서는 카드 여러 장을 ``batchUpdate``로 한 배치에 모아 보냈다.
 반면 4장과 7장의 CSV 가져오기는 트랜잭션 경계에 집중하느라 카드를 한 장씩 INSERT했다.
 수백 장쯤은 문제없지만, 수만 장이 되면 DB와 주고받는 왕복 횟수가 병목이 된다.
 ``JdbcRepositorySupport``의 ``saveBatch``는 2장에서 본 JDBC 배치를 Plus 스타일로 감싼 것이다.
@@ -236,7 +237,8 @@ include::{examples}/ch10-jdbc-plus-deep/src/test/java/flashcard/plusdeep/reposit
 
 7장에서는 통계 조회를 리포지토리 구현(`ReviewLogRepositoryImpl`)에 두었다.
 두 방식 모두 ``mapParameterSource``로 파라미터를 만들고 `find`/`select` 계열 메서드로 SQL을 실행한다는 점은 같다.
-특정 엔티티와 관련된 조회는 리포지토리에, 그렇지 않은 조회는 DAO에 둔다. 차이는 코드를 어디에 두느냐뿐이다.
+특정 엔티티와 관련된 조회는 리포지토리에, 그렇지 않은 조회는 DAO에 둔다.
+차이는 코드를 어디에 두느냐뿐이다.
 
 === 여기서 다루지 않은 것
 

@@ -8,7 +8,8 @@
 
 이 장은 그 질문들에 답하는 Spring Data JDBC의 나머지 도구들을 다룬다.
 예제 모듈은 ``examples/ch09-data-jdbc-deep``이고, 6장처럼 덱과 카드 두 애그리거트로 이루어진 테스트 중심 모듈이다.
-의존성도 6장과 똑같다. 이 장의 심화 기능들에 새 의존성은 필요 없다.
+의존성도 6장과 똑같다.
+이 장의 심화 기능들에 새 의존성은 필요 없다.
 
 [source,groovy,indent=0]
 ----
@@ -139,7 +140,7 @@ Spring Data는 세터 대신 값을 바꾼 사본을 만들어 돌려주므로, 
 === 커스텀 컨버터: 값 타입과 칼럼 사이
 
 카드에 태그 몇 개를 붙이고 싶다.
-7장에서는 태그를 테이블 둘(tag, card_tag)로 정규화했지만, "카드 안에서만 보이는 꼬리표" 정도라면 쉼표로 이은 문자열 한 칼럼이면 충분할 때도 많다.
+7장에서는 태그를 테이블 둘(`tag`, `card_tag`)로 정규화했지만, "카드 안에서만 보이는 꼬리표" 정도라면 쉼표로 이은 문자열 한 칼럼이면 충분할 때도 많다.
 문제는 Spring Data JDBC가 ``Tags``라는 우리 타입을 varchar 칼럼에 어떻게 넣고 꺼낼지 모른다는 것이다.
 그 변환 규칙은 컨버터로 등록한다.
 
@@ -177,7 +178,8 @@ include::{examples}/ch09-data-jdbc-deep/src/test/java/flashcard/deep/CardReposit
 ----
 
 `BeforeConvertCallback<Card>` 빈을 등록하면 카드가 SQL 파라미터로 변환되기 직전에 매번 호출된다.
-불변 record와 잘 맞는 구조다. 콜백은 받은 객체를 고치는 대신 다듬은 사본을 돌려준다.
+불변 record와 잘 맞는 구조다.
+콜백은 받은 객체를 고치는 대신 다듬은 사본을 돌려준다.
 `AfterConvertCallback`(조회 직후), `BeforeDeleteCallback`(삭제 직전) 등 다른 시점에도 같은 방식으로 끼어들 수 있다.
 
 === 설정 클래스와 슬라이스 테스트의 함정
@@ -190,7 +192,7 @@ include::{examples}/ch09-data-jdbc-deep/src/main/java/flashcard/deep/DataJdbcDee
 ----
 
 ``AbstractJdbcConfiguration``은 Spring Data JDBC의 기반 설정 클래스로, `userConverters` 같은 확장 지점을 제공한다.
-Spring Boot의 자동 설정도 내부적으로 이 클래스의 서브클래스다.
+Spring Boot의 자동 설정도 내부에서 이 클래스의 서브클래스를 등록한다.
 그래서 우리가 서브클래스를 직접 두면, 5장에서 본 "직접 등록한 빈이 우선한다"는 규칙에 따라 Boot의 자동 설정은 적용되지 않는다.
 
 여기서 6장의 슬라이스 테스트 주의점이 하나 더 늘어난다.
@@ -209,7 +211,8 @@ include::{examples}/ch09-data-jdbc-deep/src/test/java/flashcard/deep/DeckReposit
 
 === 정리
 
-이 장의 도구들에는 공통점이 하나 있다. *반복되는 관심사를 선언 한 줄로 옮긴다.*
+이 장의 도구들에는 공통점이 하나 있다.
+*반복되는 관심사를 선언 한 줄로 옮긴다.*
 페이지 계산은 `Pageable` 파라미터가, 시각 기록은 애너테이션이, 값 변환은 컨버터가, 공백 정리는 콜백이 맡는다.
 서비스 코드에는 도메인 로직만 남는다.
 

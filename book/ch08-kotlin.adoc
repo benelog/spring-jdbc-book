@@ -49,7 +49,7 @@ include::{examples}/ch08-kotlin/src/main/kotlin/flashcard/kotlin/CardSqls.kt[tag
 ----
 
 동적 SQL 조립에는 ``buildString``이 `StringBuilder` 상용구를 줄여 준다.
-과거 Java 프로젝트에서는 멀티라인 SQL을 쓰려고 Groovy를 섞어 쓰기도 했다.
+과거 Java 프로젝트에서는 여러 줄짜리 SQL을 쓰려고 Groovy를 섞어 쓰기도 했다.
 텍스트 블록이 생긴 지금의 Java나 Kotlin에서는 언어 하나로 해결된다.
 
 === nullable 타입: Optional의 자리에는
@@ -65,7 +65,7 @@ include::{examples}/ch08-kotlin/src/main/kotlin/flashcard/kotlin/CardRepository.
 호출하는 쪽은 ``cards.findById(1)?.text ?: "없음"``처럼 안전 호출(`?.`)과 엘비스 연산자(`?:`)로 처리한다.
 컴파일러가 null 처리를 강제하므로, Java에서 ``Optional``을 확인하지 않고 ``get()``으로 값을 꺼내다 나는 실수가 컴파일 오류로 잡힌다.
 
-=== checked 예외가 없는 언어에서의 예외 처리
+=== checked 예외가 없는 언어의 예외 처리
 
 Kotlin에는 checked 예외가 없다.
 ``SQLException``을 던지는 Java 메서드를 호출해도 컴파일러가 try-catch나 `throws` 선언을 요구하지 않는다.
