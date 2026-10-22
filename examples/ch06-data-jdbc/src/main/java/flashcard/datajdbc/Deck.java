@@ -44,18 +44,22 @@ public class Deck {
     public String getName() {
         return name;
     }
+    // tag::rename[]
 
     public void rename(String newName) {
         this.name = newName;
     }
+    // end::rename[]
 
     public long getVersion() {
         return version;
     }
+    // tag::get-cards[]
 
     public List<Card> getCards() {
         return List.copyOf(cards);
     }
+    // end::get-cards[]
 
     @Override
     public String toString() {

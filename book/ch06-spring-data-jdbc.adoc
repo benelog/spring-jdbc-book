@@ -32,7 +32,7 @@ Spring Data JDBC의 중심 개념은 도메인 주도 설계(DDD)에서 온 *애
 
 [source,java,indent=0]
 ----
-include::{examples}/ch06-data-jdbc/src/main/java/flashcard/datajdbc/Deck.java[tag=class]
+include::{examples}/ch06-data-jdbc/src/main/java/flashcard/datajdbc/Deck.java[tags=class;rename;get-cards]
 ----
 
 [source,java,indent=0]
