@@ -1,4 +1,4 @@
-== JDBC: 모든 것의 바탕이 되는 표준
+== JDBC: 모든 데이터 액세스 기술의 바탕이 되는 표준
 
 Java 애플리케이션이 관계형 데이터베이스에 SQL을 보내고 결과를 받는 방법은 결국 하나다.
 JDBC(Java Database Connectivity)다.
@@ -99,7 +99,8 @@ try {
 close 역시 ``SQLException``을 던질 수 있으므로, 앞선 close의 예외를 잡아 주지 않으면 뒤의 ``conn.close()``가 실행되지 않기 때문이다.
 "Connection을 닫으면 Statement도 함께 닫힌다"는 스펙만 믿기도 어렵다.
 커넥션 풀에서 얻은 커넥션의 ``close()``는 실제로 연결을 끊는 것이 아니라 풀에 반환하는 것이라, ``Statement``까지 정리된다고 장담할 수 없다.
-이렇게 코딩하지 않은 시스템은 한동안 문제없이 동작하다가 DB가 "maximum open cursors exceeded" 같은 에러를 내기 시작할 때에야 문제를 알게 된다.
+이렇게 코딩하지 않은 시스템에서는 닫히지 않은 ``Statement``가 DB의 커서를 차지한 채 하나씩 쌓인다.
+한동안은 문제없이 동작하므로, DB가 "maximum open cursors exceeded" 같은 에러를 내기 시작할 때에야 개발자가 문제를 알게 된다.
 
 《Release It!》(마이클 나이가드)의 첫 사례 연구가 바로 이 문제다.
 미국 한 대형 항공사의 예약 시스템에서, finally 절이 예외 처리 없이 `stmt.close()` 다음에 ``conn.close()``를 부르는 구조로 되어 있었다.
@@ -136,7 +137,7 @@ include::{examples}/ch01-jdbc-basics/src/main/java/flashcard/jdbc/JdbcQuickTour.
 첫째, **SQL 주입(injection) 공격을 원천 차단**한다.
 바인딩된 값은 SQL 문법이 아니라 순수한 값으로만 취급된다.
 예를 들어 사용자가 `+' or '1'='1+` 같은 문자열을 입력해도 SQL 조건으로 해석되지 않고 문자열 값 그대로 비교된다.
-둘째, DB가 같은 SQL의 실행 계획을 재사용할 수 있어 성능에도 유리하다.
+둘째, 값이 달라져도 SQL 문자열은 같으므로 DB가 한 번 만든 실행 계획을 재사용할 수 있어 성능에도 유리하다.
 
 위 코드의 ``Statement.RETURN_GENERATED_KEYS``와 ``getGeneratedKeys()``는 자동 채번된 기본 키를 받아 오는 표준 방법이다.
 insert 직후에 "방금 만들어진 덱의 id"가 필요할 때 쓴다.
@@ -227,12 +228,13 @@ include::{examples}/ch01-jdbc-basics/src/main/java/flashcard/jdbc/CardDao.java[t
 ----
 
 ``addBatch()``로 파라미터 조합을 쌓아 두었다가 ``executeBatch()``가 한꺼번에 전송한다.
-네트워크 왕복이 줄어 대량 입력에서 성능 차이가 크게 난다.
+네트워크 왕복 횟수가 줄어들므로, 입력할 건수가 많을수록 한 건씩 실행할 때보다 시간이 더 많이 절약된다.
 
 === DataSource: 커넥션을 얻는 표준 통로
 
 ``DriverManager``는 부를 때마다 새 연결을 만든다.
-연결 수립은 비싼 작업이라, 요청마다 연결을 새로 맺으면 그 비용이 응답 시간에 그대로 더해진다.
+연결을 새로 맺으려면 DB 서버와 네트워크 접속을 수립하고 인증까지 거쳐야 한다.
+요청마다 연결을 새로 맺으면 그 시간이 응답 시간에 그대로 더해진다.
 그래서 실전에서는 커넥션을 미리 만들어 두고 빌려 쓰는 커넥션 풀(connection pool)을 쓴다.
 JDBC는 풀을 쓰든 안 쓰든 같은 방법으로 커넥션을 얻도록 ``javax.sql.DataSource`` 인터페이스를 표준화해 두었다.
 
@@ -276,4 +278,5 @@ JDBC만으로도 필요한 일은 전부 할 수 있다.
 3. *수동 트랜잭션 관리*: commit/rollback 코드, 그리고 같은 커넥션을 모든 내부 메서드에 인자로 넘겨야 하는 구조.
 
 이 고통은 JDBC만큼이나 오래된 것이라, 자원 정리를 대신해 주는 도우미 라이브러리(Apache Commons DbUtils가 대표적이다)도 일찍부터 있었다.
+Spring JDBC는 자원 정리에 그치지 않고 예외와 트랜잭션까지 세 가지를 모두 다룬다.
 다음 장부터 Spring JDBC가 이 셋을 순서대로 해결해 나간다.

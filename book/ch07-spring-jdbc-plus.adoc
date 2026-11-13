@@ -2,13 +2,13 @@
 
 이 책이 쌓아 올린 마지막 레이어, Spring JDBC Plus다.
 네이버가 만들어 공개한 Spring Data JDBC 확장 라이브러리로, 사내 여러 서비스에서 쓰이며 다듬어졌다.
-방향은 명확하다.
+설계 방향은 한 문장으로 요약할 수 있다.
 *Spring Data JDBC의 리포지토리 편의는 유지하되, 커스텀 SQL도 리포지토리의 정식 구성 요소로 다룬다.*
 
 6장에서 남긴 아쉬움을 돌아보면 이 라이브러리가 무엇을 채우는지 보인다.
 
 * ``@Query``의 SQL마다 칼럼 목록을 나열하는 반복 → 엔티티 정의에서 SELECT 칼럼 목록을 생성해 주는 `SqlGeneratorSupport`.
-* SQL 문자열과 실행 코드가 애너테이션에 뒤섞이는 문제 → SQL은 SQL 클래스로, 실행은 리포지토리 구현으로 분리하는 `JdbcRepositorySupport`.
+* SQL이 애너테이션 속 문자열이어서 Java 코드로 조립할 수 없는 문제 → SQL은 SQL 클래스로, 실행은 리포지토리 구현으로 분리하는 `JdbcRepositorySupport`.
 * ``save``의 insert/update 자동 판단 → 의도를 드러내는 `insert`/`update` 메서드가 있는 `JdbcRepository` 인터페이스.
 
 이 장에서는 Spring JDBC Plus의 사용법을 익히면서, "들어가며"에서 약속한 Flashcard의 요구사항 전부(간격 반복 복습, 오늘 복습 큐, 재도전 라운드, 태그, 스마트 덱, 통계, CSV)를 완성한다.
@@ -66,7 +66,7 @@ image::ch07-aggregate-boundary.png[6장과 7장의 애그리거트 경계,880]
 ``review_state``는 카드마다 한 행으로 현재 일정과 누적 성적을 담고, ``review_log``는 판정 한 번마다 한 행씩 쌓인다.
 "오늘 복습 큐"는 상태를, 통계는 기록을 읽는다.
 상태는 기록에서 다시 계산할 수 있는 값이다.
-하지만 큐를 조회할 때마다 전체 기록을 집계하기에는 부담이 크므로, 계산 결과를 따로 저장해 두었다(비정규화).
+하지만 큐를 조회할 때마다 전체 기록을 집계하면 기록이 쌓일수록 조회가 느려지므로, 계산 결과를 따로 저장해 두었다(비정규화).
 
 === 도메인: 간격 반복은 record 안에
 
@@ -77,8 +77,8 @@ image::ch07-aggregate-boundary.png[6장과 7장의 애그리거트 경계,880]
 include::{examples}/ch07-jdbc-plus/src/main/java/flashcard/plus/domain/ReviewState.java[tag=srs]
 ----
 
-맞히면 1일 → 6일 → 2.5배씩, 틀리면 1일로.
-순수 함수이므로 DB 없이 테스트한다.
+맞히면 간격이 1일 → 6일 → 직전의 2.5배로 늘고, 틀리면 1일로 돌아간다.
+입력이 같으면 결과가 같은 순수 함수이므로 DB 없이 테스트한다.
 
 [source,java,indent=0]
 ----
@@ -106,7 +106,7 @@ include::{examples}/ch07-jdbc-plus/src/main/java/flashcard/plus/repository/CardR
 ----
 
 커스텀 메서드의 목록이 그대로 요구사항의 목록이다.
-오늘 복습 큐(`findDue`), 추천 복습 두 종류(`findOftenWrong`, `findStale`), 스마트 덱의 나머지 조건(`findRecent`, `findByTagName`).
+오늘 복습 큐(`findDue`), 추천 복습 두 종류(`findOftenWrong`, `findStale`), 스마트 덱의 나머지 조건(`findRecent`, `findByTagName`)이 메서드 하나씩에 대응한다.
 
 *(2) SQL 클래스*: ``SqlGeneratorSupport``를 상속하면 `sql` 객체로 엔티티 기반 SQL 조각을 생성할 수 있다.
 
@@ -140,7 +140,7 @@ include::{examples}/ch07-jdbc-plus/src/main/java/flashcard/plus/repository/CardR
 
 `sqls` 필드는 생성자에서 ``sqls(CardSql::new)``로 만들어 둔 SQL 클래스의 인스턴스다.
 ``mapParameterSource()``는 이름 있는 파라미터를 담을 ``MapSqlParameterSource``를 새로 만들어 주는 상위 클래스의 도우미다.
-``find``는 목록, ``findOne``은 `Optional`, ``requiredOne``은 없으면 예외.
+``find``는 목록을, ``findOne``은 ``Optional``을 돌려주고, ``requiredOne``은 결과가 없으면 예외를 던진다.
 집계 값 하나는 ``SingleValueSelectTrait``의 ``selectSingleValue``로 받는다.
 결과를 ``Card``로 바꾸는 매핑은 상위 클래스가 엔티티 정의를 보고 처리하므로 ``RowMapper``를 쓸 일이 없다.
 
@@ -170,13 +170,13 @@ include::{examples}/ch07-jdbc-plus/src/main/java/flashcard/plus/repository/TagRe
 include::{examples}/ch07-jdbc-plus/src/main/java/flashcard/plus/repository/SmartDeckRepository.java[tag=class]
 ----
 
-기술 단계를 밟아 온 독자라면 이 구성이 익숙할 것이다.
-완성판의 리포지토리들에서 1~6장의 도구가 레이어를 이루며 공존한다.
-조회마다 `NamedParameterJdbcTemplate` 직접 호출, 표준 `@Query`, Plus의 `JdbcRepositorySupport` 중 가장 알맞은 도구를 골라 쓴다.
+앞 장들을 읽어 온 독자라면 이 구성이 익숙할 것이다.
+완성판의 리포지토리들에는 2장의 ``NamedParameterJdbcTemplate``과 ``RowMapper``, 6장의 `@Query`, 이 장의 ``JdbcRepositorySupport``가 함께 쓰인다.
+SQL이 한 줄인 조회는 표준 ``@Query``로, SQL이 여러 줄이거나 엔티티의 칼럼 목록이 필요한 조회는 SQL 클래스와 ``JdbcRepositorySupport``로, 엔티티 매핑이 필요 없는 DML은 `NamedParameterJdbcTemplate` 직접 호출로 처리한다.
 
 === 학습 흐름: 세션, 판정, 재도전 라운드
 
-학습 세션(카드 순서, 현재 위치, 틀린 카드, 라운드)은 DB가 아니라 HTTP 세션에 담기는 짧은 상태다.
+학습 세션(카드 순서, 현재 위치, 틀린 카드, 라운드)은 학습이 끝나면 버려도 되는 상태라 DB가 아니라 HTTP 세션에 담는다.
 
 [source,java,indent=0]
 ----
@@ -287,9 +287,9 @@ include::{examples}/ch07-jdbc-plus/src/test/java/flashcard/plus/web/FlashcardPlu
 === 정리
 
 Spring JDBC Plus는 새로운 패러다임이 아니라 코드를 어디에 둘지 다시 정리한 라이브러리다.
-SQL은 SQL 클래스에, 실행 코드는 리포지토리 구현에, 표준 CRUD는 인터페이스 상속에.
+SQL은 SQL 클래스에, 실행 코드는 리포지토리 구현에 두고, 표준 CRUD는 인터페이스 상속으로 얻는다.
 그 결과 커스텀 SQL이 많은 실무형 앱에서도 코드마다 둘 곳이 정해진다.
 
 완성된 앱의 데이터 액세스 코드를 살펴보면 이 책이 지나온 레이어가 모두 쓰이고 있다.
 스키마와 SQL(1장), 이름 있는 파라미터와 매핑(2장), 트랜잭션 경계(3~4장), 자동 설정과 테스트 슬라이스(5장), 애그리거트와 리포지토리(6장), 그리고 그 위에 커스텀 SQL 지원을 더한 Plus(7장).
-아래 레이어를 알기에 위 레이어의 선택이 자유롭다.
+아래 레이어를 알고 있으므로, 위 레이어의 기능이 맞지 않는 곳에서는 SQL과 ``NamedParameterJdbcTemplate``을 직접 쓰는 쪽으로 내려갈 수 있다.

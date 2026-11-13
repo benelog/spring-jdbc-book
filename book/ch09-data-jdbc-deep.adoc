@@ -49,7 +49,8 @@ include::{examples}/ch09-data-jdbc-deep/src/main/java/flashcard/deep/Deck.java[t
 include::{examples}/ch09-data-jdbc-deep/src/test/java/flashcard/deep/DeckRepositoryTest.java[tag=embedded]
 ----
 
-DB 관점에서는 평범한 칼럼 몇 개지만, 도메인 관점에서는 ``ReviewPolicy``라는 이름 있는 개념이 된다.
+DB에서는 평범한 칼럼 두 개지만, 코드에서는 ``ReviewPolicy``라는 타입 하나로 주고받는다.
+기본 정책을 만드는 ``standard()``처럼 정책에 관한 코드를 둘 곳도 생긴다.
 
 === AggregateReference: 애그리거트 사이의 타입 있는 id 참조
 
@@ -177,8 +178,7 @@ include::{examples}/ch09-data-jdbc-deep/src/test/java/flashcard/deep/CardReposit
 ----
 
 `BeforeConvertCallback<Card>` 빈을 등록하면 카드가 SQL 파라미터로 변환되기 직전에 매번 호출된다.
-불변 record와 잘 맞는 구조다.
-콜백은 받은 객체를 고치는 대신 다듬은 사본을 돌려준다.
+콜백은 받은 객체를 고치는 대신 다듬은 사본을 돌려주므로, 세터가 없는 불변 record에도 쓸 수 있다.
 `AfterConvertCallback`(조회 직후), `BeforeDeleteCallback`(삭제 직전) 등 다른 시점에도 같은 방식으로 끼어들 수 있다.
 
 === 설정 클래스와 슬라이스 테스트의 함정
@@ -206,15 +206,16 @@ include::{examples}/ch09-data-jdbc-deep/src/test/java/flashcard/deep/DeckReposit
 ``@Import``를 빠뜨리면 어떻게 될까?
 컨버터가 없으니 `Tags` 매핑이 실패하고, 감사가 꺼져 있으니 ``created_at``의 not null 제약에 걸린다.
 애플리케이션에서는 잘 돌던 코드가 테스트에서만 실패하는 것이다.
-원인을 찾기 까다로운 유형의 문제이므로 기억해 둘 만하다.
+오류 메시지는 매핑 실패와 제약 조건 위반을 알릴 뿐 설정이 빠졌다는 사실은 알려 주지 않는다.
+슬라이스 테스트에서만 실패한다면 ``@Import``부터 확인하자.
 
 === 정리
 
 이 장의 도구들에는 공통점이 하나 있다.
-*반복되는 관심사를 선언 한 줄로 옮긴다.*
+*서비스 코드마다 반복될 처리를 애너테이션이나 빈 하나로 옮긴다.*
 페이지 계산은 `Pageable` 파라미터가, 시각 기록은 애너테이션이, 값 변환은 컨버터가, 공백 정리는 콜백이 맡는다.
 서비스 코드에는 도메인 로직만 남는다.
 
-그리고 이 장의 어떤 기능도 6장의 원칙을 깨지 않았다.
+그리고 이 장의 어떤 기능도 "기본은 자동, 복잡한 것은 SQL"이라는 6장의 방식을 바꾸지 않았다.
 쿼리가 나가는 곳은 여전히 코드에 보이고, 복잡한 조회는 여전히 SQL로 적는다.
-다음 장에서는 같은 태도로 Spring JDBC Plus의 남은 기능들을 마저 살펴보고 책을 맺는다.
+다음 장에서는 Spring JDBC Plus의 남은 기능들을 마저 살펴보고 책을 맺는다.
